@@ -45,7 +45,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent) {
       getNewsFromNewsDataNextPage();
     }
   }
@@ -112,8 +113,10 @@ class _HomePageState extends State<HomePage> {
               child: ListView.separated(
                 itemCount: _newsResponse.news.length,
                 itemBuilder: (context, index) {
-                  Image? image;
-                  if (_newsResponse.news[index].image_url != null) image = Image.network(_newsResponse.news[index].image_url!);
+                  var image = null;
+                  if (_newsResponse.news[index].image_url != null &&
+                      _newsResponse.news[index].image_url != "")
+                    image = Image.network(_newsResponse.news[index].image_url!);
                   return ListTile(
                     leading: image,
                     title: Text(
@@ -131,10 +134,13 @@ class _HomePageState extends State<HomePage> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         Text(_newsResponse.news[index].pubDate!),
-                        if (_newsResponse.news[index].factCheckResponse!.claims!.length == 0)
+                        if (_newsResponse.news[index].factCheckResponse!.claims!
+                                .length ==
+                            0)
                           Text("ไม่พบการตรวจสอบ")
                         else
-                          Text("พบการตรวจสอบทั้งหมด : ${_newsResponse.news[index].factCheckResponse!.claims!.length} รายการ"),
+                          Text(
+                              "พบการตรวจสอบทั้งหมด : ${_newsResponse.news[index].factCheckResponse!.claims!.length} รายการ"),
                       ],
                     ),
                   );
@@ -147,7 +153,9 @@ class _HomePageState extends State<HomePage> {
           ],
         );
 
-    buildLoadingOverlay() => Container(color: Colors.black.withOpacity(0.2), child: Center(child: CircularProgressIndicator()));
+    buildLoadingOverlay() => Container(
+        color: Colors.black.withOpacity(0.2),
+        child: Center(child: CircularProgressIndicator()));
 
     buildErrorPage() => Container(
             child: Center(
