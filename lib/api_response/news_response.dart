@@ -30,7 +30,7 @@ class News {
   String? title;
   String? linkNews;
   String? description;
-  String? content;
+  List<String>? content;
   String? pubDate;
   String? image_url;
   String? source_id;

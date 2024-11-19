@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import '../api_response/api_action.dart';
 import '../api_response/news_response.dart';
 import 'bottom_bar.dart';
+import 'read_new_page.dart';
 
 class WorldPage extends StatefulWidget {
-  static const routeName = "world page";
+  static const routeName = "/world_page";
   const WorldPage({super.key});
 
   @override
@@ -18,6 +19,7 @@ class _WorldPageState extends State<WorldPage> {
   bool _isLoading = false;
   String? _errorMessage;
   final ScrollController _scrollController = ScrollController();
+  bool _fillData = false;
 
   String? _q;
   String? _qInTitle;
@@ -42,8 +44,7 @@ class _WorldPageState extends State<WorldPage> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels ==
-        _scrollController.position.maxScrollExtent) {
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
       getNewsFromNewsDataNextPage();
     }
   }
@@ -78,6 +79,7 @@ class _WorldPageState extends State<WorldPage> {
     try {
       setState(() {
         _errorMessage = null;
+        _fillData = true;
       });
       var newsNext = await ApiAction().getNewsDataApi(
         category: _category,
@@ -94,6 +96,7 @@ class _WorldPageState extends State<WorldPage> {
       setState(() {
         _newsResponse.news.addAll(newsNext.news);
         _newsResponse.nextPage = newsNext.nextPage;
+        _fillData = false;
       });
     } catch (e) {
       _errorMessage = e.toString();
@@ -102,48 +105,54 @@ class _WorldPageState extends State<WorldPage> {
 
   @override
   Widget build(BuildContext context) {
-    buildPage() => ListView.separated(
-          itemCount: _newsResponse.news.length,
-          itemBuilder: (context, index) {
-            var image = null;
-            if (_newsResponse.news[index].image_url != null &&
-                _newsResponse.news[index].image_url != "")
-              image = Image.network(_newsResponse.news[index].image_url!);
-            return ListTile(
-              leading: image,
-              title: Text(
-                _newsResponse.news[index].title!,
-                softWrap: true,
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (_newsResponse.news[index].description != null)
-                    Text(
-                      _newsResponse.news[index].description!,
+    buildPage() => Column(
+          children: [
+            Expanded(
+              child: ListView.separated(
+                itemCount: _newsResponse.news.length,
+                itemBuilder: (context, index) {
+                  Image? image;
+                  if (_newsResponse.news[index].image_url != null || _newsResponse.news[index].image_url != "") {
+                    image = Image.network(_newsResponse.news[index].image_url!, errorBuilder: (context, error, stackTrace) => SizedBox.shrink());
+                  } else {
+                    image = null;
+                  }
+
+                  return ListTile(
+                    leading: image,
+                    title: Text(
+                      _newsResponse.news[index].title!,
                       softWrap: true,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  Text(_newsResponse.news[index].pubDate!),
-                  if (_newsResponse
-                          .news[index].factCheckResponse!.claims!.length ==
-                      0)
-                    Text("ไม่พบการตรวจสอบ")
-                  else
-                    Text(
-                        "พบการตรวจสอบทั้งหมด : ${_newsResponse.news[index].factCheckResponse!.claims!.length} รายการ"),
-                ],
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_newsResponse.news[index].description != null)
+                          Text(
+                            _newsResponse.news[index].description!,
+                            softWrap: true,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        Text(_newsResponse.news[index].pubDate!),
+                        if (_newsResponse.news[index].factCheckResponse!.claims!.length == 0)
+                          Text("ไม่พบการตรวจสอบ")
+                        else
+                          Text("พบการตรวจสอบทั้งหมด : ${_newsResponse.news[index].factCheckResponse!.claims!.length} รายการ"),
+                      ],
+                    ),
+                    onTap: () => Navigator.pushNamed(context, ReadNewPage.routeName, arguments: _newsResponse.news[index]),
+                  );
+                },
+                controller: _scrollController,
+                separatorBuilder: (context, index) => Divider(),
               ),
-            );
-          },
-          controller: _scrollController,
-          separatorBuilder: (context, index) => Divider(),
+            ),
+            if (_fillData) Text("กำลังโหลดข้อมูลเพิ่มเติม . . ."),
+          ],
         );
 
-    buildLoadingOverlay() => Container(
-        color: Colors.black.withOpacity(0.2),
-        child: Center(child: CircularProgressIndicator()));
+    buildLoadingOverlay() => Container(color: Colors.black.withOpacity(0.2), child: Center(child: CircularProgressIndicator()));
 
     buildErrorPage() => Container(
             child: Center(

@@ -1,13 +1,14 @@
-// ignore_for_file: sort_child_properties_last
+// ignore_for_file: sort_child_properties_last, curly_braces_in_flow_control_structures
 
 import 'package:flutter/material.dart';
+import 'package:news_app/app_page/read_new_page.dart';
 
 import '../api_response/api_action.dart';
 import '../api_response/news_response.dart';
 import 'bottom_bar.dart';
 
 class HomePage extends StatefulWidget {
-  static const routeName = "home page"; //ชื่อที่ใช้อ้างถึงหน้านี้
+  static const routeName = "/home_page"; //ชื่อที่ใช้อ้างถึงหน้านี้
 
   const HomePage({super.key});
 
@@ -45,8 +46,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels ==
-        _scrollController.position.maxScrollExtent) {
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
       getNewsFromNewsDataNextPage();
     }
   }
@@ -113,10 +113,12 @@ class _HomePageState extends State<HomePage> {
               child: ListView.separated(
                 itemCount: _newsResponse.news.length,
                 itemBuilder: (context, index) {
-                  var image = null;
-                  if (_newsResponse.news[index].image_url != null &&
-                      _newsResponse.news[index].image_url != "")
-                    image = Image.network(_newsResponse.news[index].image_url!);
+                  Image? image;
+                  if (_newsResponse.news[index].image_url != null || _newsResponse.news[index].image_url != "") {
+                    image = Image.network(_newsResponse.news[index].image_url!, errorBuilder: (context, error, stackTrace) => SizedBox.shrink());
+                  } else {
+                    image = null;
+                  }
                   return ListTile(
                     leading: image,
                     title: Text(
@@ -134,15 +136,13 @@ class _HomePageState extends State<HomePage> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         Text(_newsResponse.news[index].pubDate!),
-                        if (_newsResponse.news[index].factCheckResponse!.claims!
-                                .length ==
-                            0)
+                        if (_newsResponse.news[index].factCheckResponse!.claims!.length == 0)
                           Text("ไม่พบการตรวจสอบ")
                         else
-                          Text(
-                              "พบการตรวจสอบทั้งหมด : ${_newsResponse.news[index].factCheckResponse!.claims!.length} รายการ"),
+                          Text("พบการตรวจสอบทั้งหมด : ${_newsResponse.news[index].factCheckResponse!.claims!.length} รายการ"),
                       ],
                     ),
+                    onTap: () => Navigator.pushNamed(context, ReadNewPage.routeName, arguments: _newsResponse.news[index]),
                   );
                 },
                 controller: _scrollController,
@@ -153,9 +153,7 @@ class _HomePageState extends State<HomePage> {
           ],
         );
 
-    buildLoadingOverlay() => Container(
-        color: Colors.black.withOpacity(0.2),
-        child: Center(child: CircularProgressIndicator()));
+    buildLoadingOverlay() => Container(color: Colors.black.withOpacity(0.2), child: Center(child: CircularProgressIndicator()));
 
     buildErrorPage() => Container(
             child: Center(

@@ -5,35 +5,26 @@ import 'fact_check_tools_response.dart';
 import 'news_response.dart';
 
 class ApiAction {
-  String factCheckApiKey =
-      "AIzaSyAdumZj0pFWv-G2vLKhkunwZ10wm_IlPE0"; //key fact chack tools api
-  String msNewsApiKey =
-      "f9630a02661f41c1a60f42b8932ea2ba"; //key Bing News Search api
-  String newsDataApiKey =
-      "pub_5523073a37a1c1f1ace0fad685bdec4808963"; //key NewsData api
+  String factCheckApiKey = "AIzaSyAdumZj0pFWv-G2vLKhkunwZ10wm_IlPE0"; //key fact chack tools api
+  String msNewsApiKey = "f9630a02661f41c1a60f42b8932ea2ba"; //key Bing News Search api
+  String newsDataApiKey = "pub_5523073a37a1c1f1ace0fad685bdec4808963"; //key NewsData api
 
   ApiAction();
 
   //method ที่ใช้เรียก Fact Check Tools Api
   Future<FactCheckResponse> getFactCheckApi({
-    String?
-        query, //ข้อความที่จะค้น ต้องระบุเว้นแต่จะระบุ reviewPublisherSiteFilter ไว้
-    String?
-        languageCode, //รหัสภาษา BCP-47 เช่น "en-US" ใช้เพื่อจํากัดผลลัพธ์ตามภาษา
-    String?
-        reviewPublisherSiteFilter, //เว็บไซต์ของผู้เผยแพร่ตรวจสอบเพื่อกรองผลลัพธ์
+    String? query, //ข้อความที่จะค้น ต้องระบุเว้นแต่จะระบุ reviewPublisherSiteFilter ไว้
+    String? languageCode, //รหัสภาษา BCP-47 เช่น "en-US" ใช้เพื่อจํากัดผลลัพธ์ตามภาษา
+    String? reviewPublisherSiteFilter, //เว็บไซต์ของผู้เผยแพร่ตรวจสอบเพื่อกรองผลลัพธ์
     int? maxAgeDays, //อายุสูงสุดของผลการค้นหาที่ส่งคืน หน่วยเป็นวัน
     int? pageSize, //ขนาดผลลัพธ์ ค่าเริ่มต้นจะเป็น 10
-    String?
-        pageToken, //คุณอาจส่ง nextPageToken กลับมาจากคําขอลิสต์ก่อนหน้า (หากมี) เพื่อไปยังหน้าถัดไป
+    String? pageToken, //คุณอาจส่ง nextPageToken กลับมาจากคําขอลิสต์ก่อนหน้า (หากมี) เพื่อไปยังหน้าถัดไป
     int? offset,
   }) async {
-    String url =
-        "https://factchecktools.googleapis.com/v1alpha1/claims:search?";
+    String url = "https://factchecktools.googleapis.com/v1alpha1/claims:search?";
     if (query != null) url += "query=$query&";
     if (languageCode != null) url += "languageCode=$languageCode&";
-    if (reviewPublisherSiteFilter != null)
-      url += "reviewPublisherSiteFilter=$reviewPublisherSiteFilter&";
+    if (reviewPublisherSiteFilter != null) url += "reviewPublisherSiteFilter=$reviewPublisherSiteFilter&";
     if (maxAgeDays != null) url += "maxAgeDays=$maxAgeDays&";
     if (pageSize != null) url += "pageSize=$pageSize&";
     if (pageToken != null) url += "pageToken=$pageToken&";
@@ -73,8 +64,7 @@ class ApiAction {
     if (id != null) url += "&id=$id";
     if (q != null) url += "&q=$q";
     if (qInTitle != null && q == null) url += "&qInTitle=$qInTitle";
-    if (qInMeta != null && q == null && qInTitle == null)
-      url += "&qInMeta=$qInMeta";
+    if (qInMeta != null && q == null && qInTitle == null) url += "&qInMeta=$qInMeta";
     if (timeframe != null) url += "&timeframe=$timeframe";
     if (country != null) url += "&country=$country";
     if (category != null) url += "&category=$category";
@@ -98,8 +88,7 @@ class ApiAction {
     NewsResponse newsResponse = NewsResponse.fromJsonNewsData(data);
 
     for (var i = 0; i < newsResponse.news.length; i++) {
-      newsResponse.news[i].factCheckResponse =
-          await getFactCheckApi(query: newsResponse.news[i].title);
+      newsResponse.news[i].factCheckResponse = await getFactCheckApi(query: newsResponse.news[i].title);
     }
 
     return newsResponse;

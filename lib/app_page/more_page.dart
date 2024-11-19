@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'bottom_bar.dart';
 
 class MorePage extends StatelessWidget {
-  static const routeName = "more page"; //ชื่อที่ใช้อ้างถึงหน้านี้
+  static const routeName = "/more_page"; //ชื่อที่ใช้อ้างถึงหน้านี้
 
   const MorePage({super.key});
 

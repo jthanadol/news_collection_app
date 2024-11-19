@@ -5,7 +5,7 @@ import '../api_response/fact_check_tools_response.dart';
 import 'bottom_bar.dart';
 
 class FactCheckPage extends StatefulWidget {
-  static const routeName = "fact check page"; //ชื่อที่ใช้อ้างถึงหน้านี้
+  static const routeName = "/fact_check_page"; //ชื่อที่ใช้อ้างถึงหน้านี้
 
   const FactCheckPage({super.key});
 

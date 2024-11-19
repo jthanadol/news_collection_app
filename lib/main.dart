@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:news_app/app_page/read_new_page.dart';
 import 'app_page/fact_check_page.dart';
 import 'app_page/home_page.dart';
 import 'app_page/more_page.dart';
@@ -24,7 +25,8 @@ class MyApp extends StatelessWidget {
         HomePage.routeName: (context) => HomePage(),
         WorldPage.routeName: (context) => WorldPage(),
         FactCheckPage.routeName: (context) => FactCheckPage(),
-        MorePage.routeName: (context) => MorePage()
+        MorePage.routeName: (context) => MorePage(),
+        ReadNewPage.routeName: (context) => ReadNewPage(),
       },
     );
   }
