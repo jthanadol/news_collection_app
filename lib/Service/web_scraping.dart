@@ -6,7 +6,7 @@ class WebScraping {
     var resposen = await http.get(Uri.parse(url));
     String html_string = resposen.body;
     var html = html_parser.parse(html_string);
-    //debugPrint(html_string);
+    //print(html_string);
 
     var listH2 = html.querySelectorAll('h2');
     var listP = html.querySelectorAll('p');
@@ -32,6 +32,8 @@ class WebScraping {
     }
 
     String con;
+    String? img;
+    //ต้องดักพวก tag ที่หลุดเข้ามา
     for (;;) {
       if (listP.isEmpty && listH2.isEmpty) {
         break;
@@ -42,25 +44,46 @@ class WebScraping {
         if (indexH2.isEmpty) {
           indexH2.add(2147483647);
         }
-        print("ตำแหน่ง p : ${indexP[0]} || ตำแหน่ง h2 : ${indexH2[0]}");
+        //print("ตำแหน่ง p : ${indexP[0]} || ตำแหน่ง h2 : ${indexH2[0]}");
 
         if (indexP[0] < indexH2[0]) {
-          con = listP[0].text.trim();
-          content.add(con); // .text คือเขาข้อมูลภายใน tag ส่วน .trim ใช้ลบช่องว่างหน้าหลังออก
+          con = listP[0].text.trim(); // .text คือเขาข้อมูลภายใน tag ส่วน .trim ใช้ลบช่องว่างหน้าหลังออก
+          img = getSrcInImg(con);
+          if (img != null) {
+            //print("ใส่ของจาก p ที่เป็น img : $img");
+            content.add(img);
+          } else {
+            content.add(con);
+            //print("ใส่ของจาก p : $con");
+          }
           listP.removeAt(0);
           indexP.removeAt(0);
-          print("ใส่ของจาก p : $con");
         } else {
           con = listH2[0].text.trim();
-          content.add(con);
+          img = getSrcInImg(con);
+          if (img != null) {
+            //print("ใส่ของจาก h2 ที่เป็น img : $img");
+            content.add(img);
+          } else {
+            content.add(con);
+            //print("ใส่ของจาก h2 : $con");
+          }
           listH2.removeAt(0);
           indexH2.removeAt(0);
-          print("ใส่ของจาก h2 : $con");
         }
       }
     }
-    print("จบ loop");
+    //print("จบ loop");
 
     return content;
+  }
+
+  String? getSrcInImg(String taget) {
+    var html = html_parser.parse(taget);
+    var img = html.querySelector('img');
+    if (img != null) {
+      return img.attributes['src'];
+    } else {}
+    return null;
   }
 }

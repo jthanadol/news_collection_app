@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:validators/validators.dart' as validators;
 
 import '../api_response/news_response.dart';
 import '../service/web_scraping.dart';
@@ -27,6 +28,19 @@ class _ReadNewPageState extends State<ReadNewPage> {
     });
   }
 
+  bool checkDuplicateImage(String url) {
+    //ซ้ำ true ไม่ซ้ำ false
+    if (news!.image_url != null) {
+      if (url == news!.image_url || url == Uri.decodeFull(news!.image_url!)) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (news == null) {
@@ -40,7 +54,13 @@ class _ReadNewPageState extends State<ReadNewPage> {
           itemBuilder: (context, index) {
             return Column(
               children: [
-                Text(news!.content![index]),
+                if (validators.isURL(news!.content![index]) && !checkDuplicateImage(news!.content![index]))
+                  Image.network(
+                    news!.content![index],
+                    errorBuilder: (context, error, stackTrace) => SizedBox.shrink(),
+                  )
+                else
+                  Text(news!.content![index]),
               ],
             );
           },
@@ -90,10 +110,11 @@ class _ReadNewPageState extends State<ReadNewPage> {
               news!.title!,
             ),
             Text("วันที่ : ${news!.pubDate!}"),
-            Image.network(
-              news!.image_url!,
-              errorBuilder: (context, error, stackTrace) => SizedBox.shrink(),
-            ),
+            if (news!.image_url != null)
+              Image.network(
+                news!.image_url!,
+                errorBuilder: (context, error, stackTrace) => SizedBox.shrink(),
+              ),
             if (!isLoading) buildContent(),
             if (news!.source_icon != null)
               ListTile(

@@ -84,7 +84,7 @@ class ApiAction {
 
     var response = await http.get(Uri.parse(url));
     Map<String, dynamic> data = json.decode(utf8.decode(response.bodyBytes));
-
+    //print(data);
     NewsResponse newsResponse = NewsResponse.fromJsonNewsData(data);
 
     for (var i = 0; i < newsResponse.news.length; i++) {

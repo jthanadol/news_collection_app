@@ -114,7 +114,7 @@ class _HomePageState extends State<HomePage> {
                 itemCount: _newsResponse.news.length,
                 itemBuilder: (context, index) {
                   Image? image;
-                  if (_newsResponse.news[index].image_url != null || _newsResponse.news[index].image_url != "") {
+                  if (_newsResponse.news[index].image_url != null) {
                     image = Image.network(_newsResponse.news[index].image_url!, errorBuilder: (context, error, stackTrace) => SizedBox.shrink());
                   } else {
                     image = null;
