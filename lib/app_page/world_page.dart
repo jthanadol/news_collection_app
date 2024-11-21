@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-
-import '../api_response/api_action.dart';
-import '../api_response/news_response.dart';
-import 'bottom_bar.dart';
-import 'read_new_page.dart';
+import 'package:news_app/api_response/api_action.dart';
+import 'package:news_app/api_response/news_response.dart';
+import 'package:news_app/app_page/read_new_page.dart';
 
 class WorldPage extends StatefulWidget {
   static const routeName = "/world_page";
@@ -162,7 +160,7 @@ class _WorldPageState extends State<WorldPage> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text("World"),
-        backgroundColor: Colors.greenAccent[400],
+        backgroundColor: Colors.black12,
         centerTitle: true,
         actions: [IconButton(onPressed: () {}, icon: Icon(Icons.search))],
       ),
@@ -187,7 +185,6 @@ class _WorldPageState extends State<WorldPage> {
           ),
         ],
       ),
-      bottomNavigationBar: BottomBar(),
     );
   }
 }

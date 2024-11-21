@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-
-import '../api_response/api_action.dart';
-import '../api_response/fact_check_tools_response.dart';
-import 'bottom_bar.dart';
+import 'package:news_app/api_response/api_action.dart';
+import 'package:news_app/api_response/fact_check_tools_response.dart';
 
 class FactCheckPage extends StatefulWidget {
   static const routeName = "/fact_check_page"; //ชื่อที่ใช้อ้างถึงหน้านี้
@@ -125,7 +123,7 @@ class _FactCheckPageState extends State<FactCheckPage> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text("Fact Check"),
-        backgroundColor: Colors.greenAccent[400],
+        backgroundColor: Colors.black12,
         centerTitle: true,
         actions: [IconButton(onPressed: () {}, icon: Icon(Icons.search))],
       ),
@@ -138,7 +136,6 @@ class _FactCheckPageState extends State<FactCheckPage> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomBar(),
     );
   }
 }

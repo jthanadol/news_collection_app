@@ -1,11 +1,9 @@
 // ignore_for_file: sort_child_properties_last, curly_braces_in_flow_control_structures
 
 import 'package:flutter/material.dart';
+import 'package:news_app/api_response/api_action.dart';
+import 'package:news_app/api_response/news_response.dart';
 import 'package:news_app/app_page/read_new_page.dart';
-
-import '../api_response/api_action.dart';
-import '../api_response/news_response.dart';
-import 'bottom_bar.dart';
 
 class HomePage extends StatefulWidget {
   static const routeName = "/home_page"; //ชื่อที่ใช้อ้างถึงหน้านี้
@@ -164,7 +162,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text("Home"),
-        backgroundColor: Colors.greenAccent[400],
+        backgroundColor: Colors.black12,
         centerTitle: true,
         actions: [IconButton(onPressed: () {}, icon: Icon(Icons.search))],
       ),
@@ -185,7 +183,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      bottomNavigationBar: BottomBar(),
     );
   }
 }

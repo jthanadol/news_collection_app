@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'bottom_bar.dart';
-
 class MorePage extends StatelessWidget {
   static const routeName = "/more_page"; //ชื่อที่ใช้อ้างถึงหน้านี้
 
@@ -13,14 +11,13 @@ class MorePage extends StatelessWidget {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text("More"),
-        backgroundColor: Colors.greenAccent[400],
+        backgroundColor: Colors.black12,
         centerTitle: true,
         actions: [IconButton(onPressed: () {}, icon: Icon(Icons.search))],
       ),
       body: Center(
         child: Text("This Body"),
       ),
-      bottomNavigationBar: BottomBar(),
     );
   }
 }

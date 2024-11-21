@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:news_app/api_response/news_response.dart';
+import 'package:news_app/service/web_scraping.dart';
 import 'package:validators/validators.dart' as validators;
-
-import '../api_response/news_response.dart';
-import '../service/web_scraping.dart';
 
 class ReadNewPage extends StatefulWidget {
   static const routeName = "/read_page";
