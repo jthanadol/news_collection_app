@@ -81,7 +81,12 @@ class _FactCheckPageState extends State<FactCheckPage> {
 
   @override
   Widget build(BuildContext context) {
-    buildLoadingOverlay() => Container(color: Colors.black.withOpacity(0.2), child: Center(child: CircularProgressIndicator()));
+    buildLoadingOverlay() => Container(
+          color: Colors.black.withOpacity(0.2),
+          child: const Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
 
     buildPage() => Column(
           children: [
@@ -89,16 +94,16 @@ class _FactCheckPageState extends State<FactCheckPage> {
               child: ListView.separated(
                 itemBuilder: (context, index) {
                   return ListTile(
-                      title: Text(_factCheckResponse!.claims![index].text),
+                      title: Text(_factCheckResponse!.claims![index].text!),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          for (var i = 0; i < _factCheckResponse!.claims![index].claimReview.length; i++)
+                          for (var i = 0; i < _factCheckResponse!.claims![index].claimReview!.length; i++)
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text("ข้อมูลการตรวจสอบ : ${_factCheckResponse!.claims![index].claimReview[i].textualRating}"),
-                                Text(_factCheckResponse!.claims![index].claimReview[i].title),
+                                Text("ข้อมูลการตรวจสอบ : ${_factCheckResponse!.claims![index].claimReview![i].textualRating}"),
+                                Text(_factCheckResponse!.claims![index].claimReview![i].title!),
                                 Text("วันที่ : ${_factCheckResponse!.claims![index].claimDate}"),
                               ],
                             ),
@@ -110,7 +115,7 @@ class _FactCheckPageState extends State<FactCheckPage> {
                 controller: _scrollController,
               ),
             ),
-            if (_fillData) Text("กำลังโหลดข้อมูลเพิ่มเติม . . ."),
+            if (_fillData) const Text("กำลังโหลดข้อมูลเพิ่มเติม . . ."),
           ],
         );
 
@@ -122,10 +127,10 @@ class _FactCheckPageState extends State<FactCheckPage> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text("Fact Check"),
+        title: const Text("Fact Check"),
         backgroundColor: Colors.black12,
         centerTitle: true,
-        actions: [IconButton(onPressed: () {}, icon: Icon(Icons.search))],
+        actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.search))],
       ),
       body: Center(
         child: Stack(

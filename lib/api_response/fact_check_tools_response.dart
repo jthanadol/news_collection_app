@@ -4,6 +4,10 @@ class FactCheckResponse {
 
   FactCheckResponse({required this.claims, required this.nextPageToken});
 
+  FactCheckResponse.copy(FactCheckResponse taget) {
+    claims = taget.claims!.map((claim) => Claim.copy(claim)).toList();
+  }
+
   factory FactCheckResponse.fromJson(Map<String, dynamic> json) {
     if (json.isEmpty) {
       return FactCheckResponse(claims: [], nextPageToken: null);
@@ -22,10 +26,10 @@ class FactCheckResponse {
 }
 
 class Claim {
-  String text;
-  String claimant;
-  String claimDate;
-  List<ClaimReview> claimReview;
+  String? text;
+  String? claimant;
+  String? claimDate;
+  List<ClaimReview>? claimReview;
 
   Claim({
     required this.text,
@@ -33,6 +37,13 @@ class Claim {
     required this.claimDate,
     required this.claimReview,
   });
+
+  Claim.copy(Claim taget) {
+    text = taget.text;
+    claimant = taget.claimant;
+    claimDate = taget.claimDate;
+    claimReview = taget.claimReview!.map((c) => ClaimReview.copy(c)).toList();
+  }
 
   factory Claim.fromJson(Map<String, dynamic> json) {
     List<ClaimReview> c = [];
@@ -50,12 +61,12 @@ class Claim {
 }
 
 class ClaimReview {
-  Publisher publisher;
-  String url;
-  String title;
-  String reviewDate;
-  String textualRating;
-  String languageCode;
+  Publisher? publisher;
+  String? url;
+  String? title;
+  String? reviewDate;
+  String? textualRating;
+  String? languageCode;
 
   ClaimReview({
     required this.publisher,
@@ -65,6 +76,15 @@ class ClaimReview {
     required this.textualRating,
     required this.languageCode,
   });
+
+  ClaimReview.copy(ClaimReview taget) {
+    publisher = Publisher.copy(taget.publisher!);
+    url = taget.url;
+    title = taget.title;
+    reviewDate = taget.reviewDate;
+    textualRating = taget.textualRating;
+    languageCode = taget.languageCode;
+  }
 
   factory ClaimReview.fromJson(Map<String, dynamic> json) {
     return ClaimReview(
@@ -79,13 +99,18 @@ class ClaimReview {
 }
 
 class Publisher {
-  String name;
-  String site;
+  String? name;
+  String? site;
 
   Publisher({
     required this.name,
     required this.site,
   });
+
+  Publisher.copy(Publisher taget) {
+    name = taget.name;
+    site = taget.site;
+  }
 
   factory Publisher.fromJson(Map<String, dynamic> json) {
     return Publisher(

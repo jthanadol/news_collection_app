@@ -8,6 +8,7 @@ class ApiAction {
   String factCheckApiKey = "AIzaSyAdumZj0pFWv-G2vLKhkunwZ10wm_IlPE0"; //key fact chack tools api
   String msNewsApiKey = "f9630a02661f41c1a60f42b8932ea2ba"; //key Bing News Search api
   String newsDataApiKey = "pub_5523073a37a1c1f1ace0fad685bdec4808963"; //key NewsData api
+  String azureAiTranslatorApiKey = "B4rmGh3hSwENanvIJtuQDAqSxROxB8ivQY4Bt4BQPcs1CL4ksfAhJQQJ99AKACqBBLyXJ3w3AAAbACOG4kP8"; // key Azure AI Translator
 
   ApiAction();
 
@@ -22,7 +23,13 @@ class ApiAction {
     int? offset,
   }) async {
     String url = "https://factchecktools.googleapis.com/v1alpha1/claims:search?";
-    if (query != null) url += "query=$query&";
+    if (query != null) {
+      if (query.indexOf("&") != -1) {
+        query = query.replaceAll("&", " and ");
+      }
+      print(query);
+      url += "query=$query&";
+    }
     if (languageCode != null) url += "languageCode=$languageCode&";
     if (reviewPublisherSiteFilter != null) url += "reviewPublisherSiteFilter=$reviewPublisherSiteFilter&";
     if (maxAgeDays != null) url += "maxAgeDays=$maxAgeDays&";
@@ -34,6 +41,7 @@ class ApiAction {
 
     var response = await http.get(Uri.parse(url));
     Map<String, dynamic> data = json.decode(response.body);
+    print("จาก getFactCheckApi : $data");
 
     return FactCheckResponse.fromJson(data);
   }
@@ -43,19 +51,15 @@ class ApiAction {
     String? q,
     String? qInTitle,
     String? qInMeta,
-    String? timeframe,
     String? country,
     String? category,
     String? excludecategory,
     String? language,
-    String? tag,
     String? domain,
     String? domainurl,
     String? excludedomain,
     String? excludefield,
     String? prioritydomain,
-    int? image,
-    int? video,
     int? removeduplicate,
     int? size,
     String? page,
@@ -65,32 +69,48 @@ class ApiAction {
     if (q != null) url += "&q=$q";
     if (qInTitle != null && q == null) url += "&qInTitle=$qInTitle";
     if (qInMeta != null && q == null && qInTitle == null) url += "&qInMeta=$qInMeta";
-    if (timeframe != null) url += "&timeframe=$timeframe";
     if (country != null) url += "&country=$country";
     if (category != null) url += "&category=$category";
     if (excludecategory != null) url += "&excludecategory=$excludecategory";
     if (language != null) url += "&language=$language";
-    if (tag != null) url += "&tag=$tag";
     if (domain != null) url += "&domain=$domain";
     if (domainurl != null) url += "&domainurl=$domainurl";
     if (excludedomain != null) url += "&excludedomain=$excludedomain";
     if (excludefield != null) url += "&excludefield=$excludefield";
     if (prioritydomain != null) url += "&prioritydomain=$prioritydomain";
-    if (image != null) url += "&image=$image";
-    if (video != null) url += "&video=$video";
     if (removeduplicate != null) url += "&removeduplicate=$removeduplicate";
     if (size != null) url += "&size=$size";
     if (page != null) url += "&page=$page";
 
     var response = await http.get(Uri.parse(url));
     Map<String, dynamic> data = json.decode(utf8.decode(response.bodyBytes));
-    //print(data);
+    print("จาก getNewsDataApi : $data");
     NewsResponse newsResponse = NewsResponse.fromJsonNewsData(data);
-
-    for (var i = 0; i < newsResponse.news.length; i++) {
-      newsResponse.news[i].factCheckResponse = await getFactCheckApi(query: newsResponse.news[i].title);
+    //print(newsResponse.news.length);
+    for (var i = 0; i < newsResponse.news!.length; i++) {
+      newsResponse.news![i].factCheckResponse = await getFactCheckApi(query: newsResponse.news![i].title);
     }
 
     return newsResponse;
+  }
+
+  Future<String> translateText({required String taget, required String to, String? from}) async {
+    String url = "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=$to";
+    if (from != null) url += "&from=$from";
+
+    Map<String, String> head = {
+      "Content-type": "application/json",
+      "Ocp-Apim-Subscription-Key": azureAiTranslatorApiKey,
+      "Ocp-Apim-Subscription-Region": "southeastasia",
+    };
+    var response = await http.post(Uri.parse(url),
+        headers: head,
+        body: json.encode([
+          {"text": "$taget"}
+        ]));
+
+    var data = json.decode(response.body);
+    print("จาก translateText : $data");
+    return data[0]['translations'][0]['text'];
   }
 }

@@ -13,9 +13,9 @@ class MorePage extends StatelessWidget {
         title: Text("More"),
         backgroundColor: Colors.black12,
         centerTitle: true,
-        actions: [IconButton(onPressed: () {}, icon: Icon(Icons.search))],
+        actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.search))],
       ),
-      body: Center(
+      body: const Center(
         child: Text("This Body"),
       ),
     );

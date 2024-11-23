@@ -49,17 +49,23 @@ class _ReadNewPageState extends State<ReadNewPage> {
 
     buildContent() => ListView.builder(
           shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
+          physics: const NeverScrollableScrollPhysics(),
           itemBuilder: (context, index) {
             return Column(
               children: [
                 if (validators.isURL(news!.content![index]) && !checkDuplicateImage(news!.content![index]))
-                  Image.network(
-                    news!.content![index],
-                    errorBuilder: (context, error, stackTrace) => SizedBox.shrink(),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Image.network(
+                      news!.content![index],
+                      errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                    ),
                   )
                 else
-                  Text(news!.content![index]),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(news!.content![index]),
+                  ),
               ],
             );
           },
@@ -67,27 +73,34 @@ class _ReadNewPageState extends State<ReadNewPage> {
         );
 
     buildFactCheck() => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (news!.factCheckResponse!.claims!.length != 0)
-              Text("การตรวจสอบข้อเท็จจริงของข่าวที่พบทั้งหมด ${news!.factCheckResponse!.claims!.length} : ")
+            if (news!.factCheckResponse!.claims!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text("การตรวจสอบข้อเท็จจริงของข่าวที่พบทั้งหมด ${news!.factCheckResponse!.claims!.length} : "),
+              )
             else
-              Text("ไม่พบการตรวจสอบข้อเท็จจริงของข่าว"),
+              const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Text("ไม่พบการตรวจสอบข้อเท็จจริงของข่าว"),
+              ),
             ListView.builder(
               shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
+              physics: const NeverScrollableScrollPhysics(),
               itemBuilder: (context, index) {
                 var c = news!.factCheckResponse!.claims![index];
                 return ListTile(
-                  title: Text(c.text),
+                  title: Text(c.text!),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      for (var i = 0; i < c.claimReview.length; i++)
+                      for (var i = 0; i < c.claimReview!.length; i++)
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("ข้อมูลการตรวจสอบ : ${c.claimReview[i].textualRating}"),
-                            Text(c.claimReview[i].title),
+                            Text("ข้อมูลการตรวจสอบ : ${c.claimReview![i].textualRating}"),
+                            Text(c.claimReview![i].title!),
                             Text("วันที่ : ${c.claimDate}"),
                           ],
                         ),
@@ -104,22 +117,32 @@ class _ReadNewPageState extends State<ReadNewPage> {
       appBar: AppBar(),
       body: SingleChildScrollView(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              news!.title!,
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                news!.title!,
+              ),
             ),
-            Text("วันที่ : ${news!.pubDate!}"),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text("วันที่ : ${news!.pubDate!}"),
+            ),
             if (news!.image_url != null)
-              Image.network(
-                news!.image_url!,
-                errorBuilder: (context, error, stackTrace) => SizedBox.shrink(),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Image.network(
+                  news!.image_url!,
+                  errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                ),
               ),
             if (!isLoading) buildContent(),
             if (news!.source_icon != null)
               ListTile(
                 leading: Image.network(
                   news!.source_icon!,
-                  errorBuilder: (context, error, stackTrace) => SizedBox.shrink(),
+                  errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                 ),
                 title: Text(news!.source_id!),
               )
@@ -127,7 +150,10 @@ class _ReadNewPageState extends State<ReadNewPage> {
               ListTile(
                 title: Text(news!.source_id!),
               ),
-            Text("ที่มา : ${news!.linkNews}"),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text("ที่มา : ${news!.linkNews}"),
+            ),
             buildFactCheck(),
           ],
         ),

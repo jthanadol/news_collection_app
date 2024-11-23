@@ -1,5 +1,7 @@
 // ignore_for_file: sort_child_properties_last, curly_braces_in_flow_control_structures
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:news_app/api_response/api_action.dart';
 import 'package:news_app/api_response/news_response.dart';
@@ -15,20 +17,34 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late NewsResponse _newsResponse;
+  NewsResponse? _newsResponse;
   bool _isLoading = false;
   bool _fillData = false;
   String? _errorMessage;
   final ScrollController _scrollController = ScrollController();
 
-  String? _q;
-  String? _qInTitle;
-  String? _qInMeta;
-  String? _country = "th";
-  String? _category = 'politics';
-  String? _language = 'th';
-  String? _tag;
-  int? _size;
+  String _country = "th";
+  String _language = 'th';
+  String _category = 'ธุรกิจ';
+  Map<String, String> mapCategory = {
+    'ธุรกิจ': 'business',
+    'อาชญากรรม': 'crime',
+    'ภายในประเทศ': 'domestic',
+    'การศึกษา': 'education',
+    'บันเทิง': 'entertainment',
+    'สิ่งแวดล้อม': 'environment',
+    'อาหาร': 'food',
+    'สุขภาพ': 'health',
+    'ไลฟ์สไตล์': 'lifestyle',
+    'อื่นๆ': 'other',
+    'การเมือง': 'politics',
+    'วิทยาศาสตร์': 'science',
+    'กีฬา': 'sports',
+    'เทคโนโลยี': 'technology',
+    'ยอดนิยม': 'top',
+    'การท่องเที่ยว': 'tourism',
+    'โลก': 'world',
+  };
 
   @override
   void initState() {
@@ -57,14 +73,9 @@ class _HomePageState extends State<HomePage> {
       });
 
       _newsResponse = await ApiAction().getNewsDataApi(
-        category: _category,
+        category: mapCategory[_category],
         country: _country,
         language: _language,
-        q: _q,
-        qInMeta: _qInMeta,
-        qInTitle: _qInTitle,
-        size: _size,
-        tag: _tag,
       );
 
       setState(() {
@@ -82,20 +93,15 @@ class _HomePageState extends State<HomePage> {
         _fillData = true;
       });
       var newsNext = await ApiAction().getNewsDataApi(
-        category: _category,
+        category: mapCategory[_category],
         country: _country,
         language: _language,
-        q: _q,
-        qInMeta: _qInMeta,
-        qInTitle: _qInTitle,
-        size: _size,
-        tag: _tag,
-        page: _newsResponse.nextPage,
+        page: _newsResponse!.nextPage,
       );
 
       setState(() {
-        _newsResponse.news.addAll(newsNext.news);
-        _newsResponse.nextPage = newsNext.nextPage;
+        _newsResponse!.news!.addAll(newsNext.news!);
+        _newsResponse!.nextPage = newsNext.nextPage;
         _fillData = false;
       });
     } catch (e) {
@@ -109,59 +115,61 @@ class _HomePageState extends State<HomePage> {
           children: [
             Expanded(
               child: ListView.separated(
-                itemCount: _newsResponse.news.length,
+                itemCount: _newsResponse!.news!.length,
                 itemBuilder: (context, index) {
                   Image? image;
-                  if (_newsResponse.news[index].image_url != null) {
-                    image = Image.network(_newsResponse.news[index].image_url!, errorBuilder: (context, error, stackTrace) => SizedBox.shrink());
+                  if (_newsResponse!.news![index].image_url != null) {
+                    image = Image.network(
+                      _newsResponse!.news![index].image_url!,
+                      errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                    );
                   } else {
                     image = null;
                   }
                   return ListTile(
                     leading: image,
                     title: Text(
-                      _newsResponse.news[index].title!,
+                      _newsResponse!.news![index].title!,
                       softWrap: true,
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (_newsResponse.news[index].description != null)
+                        if (_newsResponse!.news![index].description != null)
                           Text(
-                            _newsResponse.news[index].description!,
+                            _newsResponse!.news![index].description!,
                             softWrap: true,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                        Text(_newsResponse.news[index].pubDate!),
-                        if (_newsResponse.news[index].factCheckResponse!.claims!.length == 0)
-                          Text("ไม่พบการตรวจสอบ")
+                        Text(_newsResponse!.news![index].pubDate!),
+                        if (_newsResponse!.news![index].factCheckResponse!.claims!.isEmpty)
+                          const Text("ไม่พบการตรวจสอบ")
                         else
-                          Text("พบการตรวจสอบทั้งหมด : ${_newsResponse.news[index].factCheckResponse!.claims!.length} รายการ"),
+                          Text("พบการตรวจสอบทั้งหมด : ${_newsResponse!.news![index].factCheckResponse!.claims!.length} รายการ"),
                       ],
                     ),
-                    onTap: () => Navigator.pushNamed(context, ReadNewPage.routeName, arguments: _newsResponse.news[index]),
+                    onTap: () => Navigator.pushNamed(context, ReadNewPage.routeName, arguments: _newsResponse!.news![index]),
                   );
                 },
                 controller: _scrollController,
                 separatorBuilder: (context, index) => Divider(),
               ),
             ),
-            if (_fillData) Text("กำลังโหลดข้อมูลเพิ่มเติม . . ."),
+            if (_fillData) const Text("กำลังโหลดข้อมูลเพิ่มเติม . . ."),
           ],
         );
 
-    buildLoadingOverlay() => Container(color: Colors.black.withOpacity(0.2), child: Center(child: CircularProgressIndicator()));
+    buildLoadingOverlay() => Container(color: Colors.black.withOpacity(0.2), child: const Center(child: CircularProgressIndicator()));
 
-    buildErrorPage() => Container(
-            child: Center(
+    buildErrorPage() => Center(
           child: Text(_errorMessage!),
-        ));
+        );
 
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text("Home"),
+        title: const Text("Home"),
         backgroundColor: Colors.black12,
         centerTitle: true,
         actions: [IconButton(onPressed: () {}, icon: Icon(Icons.search))],
@@ -170,12 +178,39 @@ class _HomePageState extends State<HomePage> {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
-            children: [Text("หมวดข่าว")],
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Text("หมวดข่าว"),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: DropdownButton<String>(
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _category = newValue!;
+                    });
+                    getNewsFromNewsData();
+                  },
+                  items: mapCategory.keys.toList().map<DropdownMenuItem<String>>((String category) {
+                    return DropdownMenuItem<String>(
+                      value: category,
+                      child: Text(category),
+                    );
+                  }).toList(),
+                  value: _category,
+                ),
+              ),
+            ],
           ),
           Expanded(
             child: Stack(
               children: [
-                if (!_isLoading) buildPage(),
+                if (!_isLoading && _newsResponse != null) buildPage(),
+                if (!_isLoading && _newsResponse!.news!.isEmpty)
+                  const Center(
+                    child: Text("ไม่มีข่าว"),
+                  ),
                 if (_errorMessage != null) buildErrorPage(),
                 if (_isLoading) buildLoadingOverlay(),
               ],

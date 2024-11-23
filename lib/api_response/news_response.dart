@@ -1,13 +1,17 @@
 import 'fact_check_tools_response.dart';
 
 class NewsResponse {
-  List<News> news;
+  List<News>? news;
   String? nextPage;
 
   NewsResponse({
     required this.news,
     this.nextPage,
   });
+
+  NewsResponse.copy(NewsResponse taget) {
+    news = taget.news!.map((n) => News.copy(n)).toList();
+  }
 
   factory NewsResponse.fromJsonNewsData(Map<String, dynamic> json) {
     List<News> n = [];
@@ -46,6 +50,18 @@ class News {
     required this.source_id,
     required this.source_icon,
   });
+
+  News.copy(News taget) {
+    title = taget.title;
+    linkNews = taget.linkNews;
+    description = taget.description;
+    content = taget.content;
+    pubDate = taget.pubDate;
+    image_url = taget.image_url;
+    source_icon = taget.source_icon;
+    source_id = taget.source_id;
+    factCheckResponse = FactCheckResponse.copy(taget.factCheckResponse!);
+  }
 
   factory News.fromNewsData(Map<String, dynamic> json) {
     return News(

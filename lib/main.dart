@@ -14,11 +14,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       routes: {
-        HomePage.routeName: (context) => HomePage(),
-        WorldPage.routeName: (context) => WorldPage(),
-        FactCheckPage.routeName: (context) => FactCheckPage(),
-        MorePage.routeName: (context) => MorePage(),
-        ReadNewPage.routeName: (context) => ReadNewPage(),
+        HomePage.routeName: (context) => const HomePage(),
+        WorldPage.routeName: (context) => const WorldPage(),
+        FactCheckPage.routeName: (context) => const FactCheckPage(),
+        MorePage.routeName: (context) => const MorePage(),
+        ReadNewPage.routeName: (context) => const ReadNewPage(),
       },
       home: const DefaultTabController(
         length: 4,
