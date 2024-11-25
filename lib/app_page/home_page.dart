@@ -169,7 +169,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text("Home"),
+        title: const Text("ข่าวประเทศไทย"),
         backgroundColor: Colors.black12,
         centerTitle: true,
         actions: [IconButton(onPressed: () {}, icon: Icon(Icons.search))],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:news_app/api_response/api_action.dart';
 import 'package:news_app/api_response/news_response.dart';
 import 'package:news_app/service/web_scraping.dart';
 import 'package:validators/validators.dart' as validators;
@@ -12,25 +13,58 @@ class ReadNewPage extends StatefulWidget {
 }
 
 class _ReadNewPageState extends State<ReadNewPage> {
-  News? news;
-  bool isLoading = false; //สถานะการโหลดข้อมูล
+  News? _news;
+  News? _newsRaw;
+  News? _newsTranslate;
+  bool _isLoading = false; //สถานะการโหลดข้อมูล
+  bool _isTranslate = true; //สถานะการแปล
+  String? _errorMessage;
+  Color colorTranslate = Colors.blue;
 
   Future<void> getData(String url) async {
-    setState(() {
-      isLoading = true;
-    });
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
 
-    news!.content = await WebScraping().scrapingThisWeb(url);
+      _newsRaw!.content = await WebScraping().scrapingThisWeb(url);
 
-    setState(() {
-      isLoading = false;
-    });
+      getTranslate();
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      _errorMessage = e.toString();
+    }
+  }
+
+  Future<void> getTranslate() async {
+    try {
+      setState(() {
+        _errorMessage = null;
+      });
+      _newsTranslate = News.copy(_newsRaw!);
+      _newsTranslate!.title = await ApiAction().translateText(taget: _newsTranslate!.title!, to: "th");
+      for (var i = 0; i < _newsTranslate!.content!.length; i++) {
+        if (!validators.isURL(_newsTranslate!.content![i])) {
+          _newsTranslate!.content![i] = await ApiAction().translateText(taget: _newsTranslate!.content![i], to: "th");
+        }
+      }
+      print("news ${_news!.content![0]}");
+      print("newsRaw ${_newsRaw!.content![0]}");
+      print("newsTranslate ${_newsTranslate!.content![0]}");
+      swapNews();
+    } catch (e) {
+      _errorMessage = e.toString();
+    }
   }
 
   bool checkDuplicateImage(String url) {
     //ซ้ำ true ไม่ซ้ำ false
-    if (news!.image_url != null) {
-      if (url == news!.image_url || url == Uri.decodeFull(news!.image_url!)) {
+    if (_news!.image_url != null) {
+      if (url == _news!.image_url || url == Uri.decodeFull(_news!.image_url!)) {
         return true;
       } else {
         return false;
@@ -40,11 +74,30 @@ class _ReadNewPageState extends State<ReadNewPage> {
     }
   }
 
+  void swapNews() {
+    if (_isTranslate) {
+      setState(() {
+        _news = _newsTranslate;
+        colorTranslate = Colors.blue;
+      });
+    } else {
+      setState(() {
+        _news = _newsRaw!;
+        colorTranslate = Colors.black;
+      });
+    }
+    print(_isTranslate);
+    print("news ${_news!.content![0]}");
+    print("newsRaw ${_newsRaw!.content![0]}");
+    print("newsTranslate ${_newsTranslate!.content![0]}");
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (news == null) {
-      news = ModalRoute.of(context)?.settings.arguments as News;
-      getData(news!.linkNews!);
+    if (_newsRaw == null) {
+      _newsRaw = ModalRoute.of(context)?.settings.arguments as News;
+      _news = _newsRaw;
+      getData(_newsRaw!.linkNews!);
     }
 
     buildContent() => ListView.builder(
@@ -53,32 +106,32 @@ class _ReadNewPageState extends State<ReadNewPage> {
           itemBuilder: (context, index) {
             return Column(
               children: [
-                if (validators.isURL(news!.content![index]) && !checkDuplicateImage(news!.content![index]))
+                if (validators.isURL(_news!.content![index]) && !checkDuplicateImage(_news!.content![index]))
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Image.network(
-                      news!.content![index],
+                      _news!.content![index],
                       errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                     ),
                   )
                 else
                   Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: Text(news!.content![index]),
+                    child: Text(_news!.content![index]),
                   ),
               ],
             );
           },
-          itemCount: news!.content!.length,
+          itemCount: _news!.content!.length,
         );
 
     buildFactCheck() => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (news!.factCheckResponse!.claims!.isNotEmpty)
+            if (_news!.factCheckResponse!.claims!.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Text("การตรวจสอบข้อเท็จจริงของข่าวที่พบทั้งหมด ${news!.factCheckResponse!.claims!.length} : "),
+                child: Text("การตรวจสอบข้อเท็จจริงของข่าวที่พบทั้งหมด ${_news!.factCheckResponse!.claims!.length} : "),
               )
             else
               const Padding(
@@ -89,7 +142,7 @@ class _ReadNewPageState extends State<ReadNewPage> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemBuilder: (context, index) {
-                var c = news!.factCheckResponse!.claims![index];
+                var c = _news!.factCheckResponse!.claims![index];
                 return ListTile(
                   title: Text(c.text!),
                   subtitle: Column(
@@ -108,55 +161,102 @@ class _ReadNewPageState extends State<ReadNewPage> {
                   ),
                 );
               },
-              itemCount: news!.factCheckResponse!.claims!.length,
+              itemCount: _news!.factCheckResponse!.claims!.length,
             ),
           ],
         );
 
-    return Scaffold(
-      appBar: AppBar(),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                news!.title!,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text("วันที่ : ${news!.pubDate!}"),
-            ),
-            if (news!.image_url != null)
+    buildPage() => SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Image.network(
-                  news!.image_url!,
-                  errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                child: Text(
+                  _news!.title!,
                 ),
               ),
-            if (!isLoading) buildContent(),
-            if (news!.source_icon != null)
-              ListTile(
-                leading: Image.network(
-                  news!.source_icon!,
-                  errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
-                ),
-                title: Text(news!.source_id!),
-              )
-            else
-              ListTile(
-                title: Text(news!.source_id!),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text("วันที่ : ${_news!.pubDate!}"),
               ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text("ที่มา : ${news!.linkNews}"),
+              if (_news!.image_url != null)
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Image.network(
+                    _news!.image_url!,
+                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                  ),
+                ),
+              if (!_isLoading) buildContent(),
+              if (_news!.source_icon != null)
+                ListTile(
+                  leading: Image.network(
+                    _news!.source_icon!,
+                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                  ),
+                  title: Text(_news!.source_id!),
+                )
+              else
+                ListTile(
+                  title: Text(_news!.source_id!),
+                ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text("ที่มา : ${_news!.linkNews}"),
+              ),
+              buildFactCheck(),
+            ],
+          ),
+        );
+    buildErrorPage() => Center(
+          child: Text(_errorMessage!),
+        );
+
+    return Scaffold(
+      appBar: AppBar(
+        actions: [
+          IconButton(onPressed: () {}, icon: const Icon(Icons.headphones)),
+          IconButton(
+            onPressed: () {
+              if (_isTranslate) {
+                _isTranslate = false;
+              } else {
+                _isTranslate = true;
+              }
+              swapNews();
+            },
+            icon: Icon(
+              Icons.g_translate,
+              color: colorTranslate,
             ),
-            buildFactCheck(),
-          ],
-        ),
+          ),
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.text_fields),
+          ),
+          PopupMenuButton(
+            itemBuilder: (BuildContext context) {
+              return [
+                PopupMenuItem<String>(
+                  value: 'Option 1',
+                  child: IconButton(onPressed: () {}, icon: Icon(Icons.download)),
+                ),
+                PopupMenuItem<String>(
+                  value: 'Option 2',
+                  child: IconButton(onPressed: () {}, icon: Icon(Icons.share_sharp)),
+                ),
+              ];
+            },
+          )
+        ],
+        backgroundColor: Colors.black12,
+      ),
+      body: Stack(
+        children: [
+          if (_errorMessage != null) buildErrorPage(),
+          buildPage(),
+        ],
       ),
     );
   }

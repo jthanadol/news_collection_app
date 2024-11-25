@@ -55,7 +55,7 @@ class News {
     title = taget.title;
     linkNews = taget.linkNews;
     description = taget.description;
-    content = taget.content;
+    content!.addAll(taget.content!);
     pubDate = taget.pubDate;
     image_url = taget.image_url;
     source_icon = taget.source_icon;

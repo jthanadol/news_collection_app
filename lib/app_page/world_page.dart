@@ -22,7 +22,7 @@ class _WorldPageState extends State<WorldPage> {
   bool _isTranslate = true; //สถานะว่าจะแสดงแบบแปลภาษาหรือไม่
 
   String? _country = 'สหรัฐอเมริกา';
-  String? _language = "en";
+  String? _language = null;
   String _category = 'ธุรกิจ';
   Map<String, String> mapCategory = {
     'ธุรกิจ': 'business',
@@ -399,7 +399,7 @@ class _WorldPageState extends State<WorldPage> {
                           Text("พบการตรวจสอบทั้งหมด : ${_newsResponse!.news![index].factCheckResponse!.claims!.length} รายการ"),
                       ],
                     ),
-                    onTap: () => Navigator.pushNamed(context, ReadNewPage.routeName, arguments: _newsResponse!.news![index]),
+                    onTap: () => Navigator.pushNamed(context, ReadNewPage.routeName, arguments: _newsRaw!.news![index]),
                   );
                 },
                 controller: _scrollController,
@@ -419,7 +419,7 @@ class _WorldPageState extends State<WorldPage> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text("World"),
+        title: const Text("ข่าวต่างประเทศ"),
         backgroundColor: Colors.black12,
         centerTitle: true,
         actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.search))],
