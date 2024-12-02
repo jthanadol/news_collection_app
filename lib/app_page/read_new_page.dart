@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:news_app/api_response/api_action.dart';
 import 'package:news_app/api_response/news_response.dart';
 import 'package:news_app/service/web_scraping.dart';
@@ -52,9 +53,6 @@ class _ReadNewPageState extends State<ReadNewPage> {
           _newsTranslate!.content![i] = await ApiAction().translateText(taget: _newsTranslate!.content![i], to: "th");
         }
       }
-      print("news ${_news!.content![0]}");
-      print("newsRaw ${_newsRaw!.content![0]}");
-      print("newsTranslate ${_newsTranslate!.content![0]}");
       swapNews();
     } catch (e) {
       _errorMessage = e.toString();
@@ -86,10 +84,6 @@ class _ReadNewPageState extends State<ReadNewPage> {
         colorTranslate = Colors.black;
       });
     }
-    print(_isTranslate);
-    print("news ${_news!.content![0]}");
-    print("newsRaw ${_newsRaw!.content![0]}");
-    print("newsTranslate ${_newsTranslate!.content![0]}");
   }
 
   @override
@@ -154,7 +148,7 @@ class _ReadNewPageState extends State<ReadNewPage> {
                           children: [
                             Text("ข้อมูลการตรวจสอบ : ${c.claimReview![i].textualRating}"),
                             Text(c.claimReview![i].title!),
-                            Text("วันที่ : ${c.claimDate}"),
+                            Text(DateFormat.yMMMEd().format(DateTime.parse(c.claimDate!))),
                           ],
                         ),
                     ],
@@ -178,7 +172,7 @@ class _ReadNewPageState extends State<ReadNewPage> {
               ),
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Text("วันที่ : ${_news!.pubDate!}"),
+                child: Text(DateFormat.yMMMEd().format(DateTime.parse(_news!.pubDate!))),
               ),
               if (_news!.image_url != null)
                 Padding(
@@ -203,7 +197,7 @@ class _ReadNewPageState extends State<ReadNewPage> {
                 ),
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Text("ที่มา : ${_news!.linkNews}"),
+                child: SelectableText("ที่มา : ${_news!.linkNews}"),
               ),
               buildFactCheck(),
             ],
@@ -219,11 +213,7 @@ class _ReadNewPageState extends State<ReadNewPage> {
           IconButton(onPressed: () {}, icon: const Icon(Icons.headphones)),
           IconButton(
             onPressed: () {
-              if (_isTranslate) {
-                _isTranslate = false;
-              } else {
-                _isTranslate = true;
-              }
+              _isTranslate = !_isTranslate;
               swapNews();
             },
             icon: Icon(

@@ -1,11 +1,11 @@
 // ignore_for_file: sort_child_properties_last, curly_braces_in_flow_control_structures
 
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:news_app/api_response/api_action.dart';
 import 'package:news_app/api_response/news_response.dart';
 import 'package:news_app/app_page/read_new_page.dart';
+import 'package:news_app/app_page/search_new_page.dart';
 
 class HomePage extends StatefulWidget {
   static const routeName = "/home_page"; //ชื่อที่ใช้อ้างถึงหน้านี้
@@ -142,9 +142,12 @@ class _HomePageState extends State<HomePage> {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                        Text(_newsResponse!.news![index].pubDate!),
+                        Text(DateFormat.yMMMEd().format(DateTime.parse(_newsResponse!.news![index].pubDate!))),
                         if (_newsResponse!.news![index].factCheckResponse!.claims!.isEmpty)
-                          const Text("ไม่พบการตรวจสอบ")
+                          Container(
+                            child: const Text("ไม่พบการตรวจสอบ"),
+                            color: Colors.amber,
+                          )
                         else
                           Text("พบการตรวจสอบทั้งหมด : ${_newsResponse!.news![index].factCheckResponse!.claims!.length} รายการ"),
                       ],
@@ -153,7 +156,7 @@ class _HomePageState extends State<HomePage> {
                   );
                 },
                 controller: _scrollController,
-                separatorBuilder: (context, index) => Divider(),
+                separatorBuilder: (context, index) => const Divider(),
               ),
             ),
             if (_fillData) const Text("กำลังโหลดข้อมูลเพิ่มเติม . . ."),
@@ -172,7 +175,13 @@ class _HomePageState extends State<HomePage> {
         title: const Text("ข่าวประเทศไทย"),
         backgroundColor: Colors.black12,
         centerTitle: true,
-        actions: [IconButton(onPressed: () {}, icon: Icon(Icons.search))],
+        actions: [
+          IconButton(
+              onPressed: () {
+                Navigator.pushNamed(context, SearchNewPage.routeName);
+              },
+              icon: const Icon(Icons.search)),
+        ],
       ),
       body: Column(
         children: [

@@ -6,7 +6,7 @@ class WebScraping {
     var resposen = await http.get(Uri.parse(url));
     String html_string = resposen.body;
     var html = html_parser.parse(html_string);
-    //print(html_string);
+    print(html_string);
 
     var listH2 = html.querySelectorAll('h2');
     var listP = html.querySelectorAll('p');

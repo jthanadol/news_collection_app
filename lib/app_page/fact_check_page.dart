@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:news_app/api_response/api_action.dart';
 import 'package:news_app/api_response/fact_check_tools_response.dart';
 
@@ -70,7 +71,7 @@ class _FactCheckPageState extends State<FactCheckPage> {
       );
 
       setState(() {
-        _factCheckResponse!.claims!.addAll(factCheckNext!.claims!);
+        _factCheckResponse!.claims!.addAll(factCheckNext.claims!);
         _factCheckResponse!.nextPageToken = factCheckNext.nextPageToken;
         _fillData = false;
       });
@@ -94,21 +95,22 @@ class _FactCheckPageState extends State<FactCheckPage> {
               child: ListView.separated(
                 itemBuilder: (context, index) {
                   return ListTile(
-                      title: Text(_factCheckResponse!.claims![index].text!),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          for (var i = 0; i < _factCheckResponse!.claims![index].claimReview!.length; i++)
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("ข้อมูลการตรวจสอบ : ${_factCheckResponse!.claims![index].claimReview![i].textualRating}"),
-                                Text(_factCheckResponse!.claims![index].claimReview![i].title!),
-                                Text("วันที่ : ${_factCheckResponse!.claims![index].claimDate}"),
-                              ],
-                            ),
-                        ],
-                      ));
+                    title: Text(_factCheckResponse!.claims![index].text!),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (var i = 0; i < _factCheckResponse!.claims![index].claimReview!.length; i++)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("ข้อมูลการตรวจสอบ : ${_factCheckResponse!.claims![index].claimReview![i].textualRating}"),
+                              Text(_factCheckResponse!.claims![index].claimReview![i].title!),
+                              Text(DateFormat.yMMMEd().format(DateTime.parse(_factCheckResponse!.claims![index].claimDate!))),
+                            ],
+                          ),
+                      ],
+                    ),
+                  );
                 },
                 separatorBuilder: (context, index) => Divider(),
                 itemCount: _factCheckResponse!.claims!.length,

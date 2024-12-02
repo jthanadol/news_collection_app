@@ -57,7 +57,7 @@ class ApiAction {
     String? language,
     String? domain,
     String? domainurl,
-    String? excludedomain,
+    String? excludedomain, //ชื่อ domain ข่าวที่ไม่ต้องการ สูงสุด 5
     String? excludefield,
     String? prioritydomain,
     int? removeduplicate,

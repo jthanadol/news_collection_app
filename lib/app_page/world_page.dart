@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:news_app/api_response/api_action.dart';
 import 'package:news_app/api_response/news_response.dart';
 import 'package:news_app/app_page/read_new_page.dart';
+import 'package:news_app/app_page/search_new_page.dart';
 
 class WorldPage extends StatefulWidget {
   static const routeName = "/world_page"; //ชื่อที่ใช้อ้างถึงหน้านี้
@@ -22,8 +24,9 @@ class _WorldPageState extends State<WorldPage> {
   bool _isTranslate = true; //สถานะว่าจะแสดงแบบแปลภาษาหรือไม่
 
   String? _country = 'สหรัฐอเมริกา';
-  String? _language = null;
+  String? _language;
   String _category = 'ธุรกิจ';
+  String? _excludedomain; //ชื่อ domain ข่าวที่ไม่ต้องการ สูงสุด 5
   Map<String, String> mapCategory = {
     'ธุรกิจ': 'business',
     'อาชญากรรม': 'crime',
@@ -284,6 +287,7 @@ class _WorldPageState extends State<WorldPage> {
         category: mapCategory[_category],
         country: countryCodes[_country],
         language: _language,
+        excludedomain: _excludedomain,
       );
       _newsResponse = _newsRaw;
 
@@ -307,6 +311,7 @@ class _WorldPageState extends State<WorldPage> {
         category: mapCategory[_category],
         country: countryCodes[_country],
         language: _language,
+        excludedomain: _excludedomain,
         page: _newsResponse!.nextPage,
       );
       NewsResponse n = NewsResponse.copy(newsNext);
@@ -392,9 +397,12 @@ class _WorldPageState extends State<WorldPage> {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                        Text(_newsResponse!.news![index].pubDate!),
+                        Text(DateFormat.yMMMEd().format(DateTime.parse(_newsResponse!.news![index].pubDate!))),
                         if (_newsResponse!.news![index].factCheckResponse!.claims!.isEmpty)
-                          const Text("ไม่พบการตรวจสอบ")
+                          Container(
+                            child: const Text("ไม่พบการตรวจสอบ"),
+                            color: Colors.amber,
+                          )
                         else
                           Text("พบการตรวจสอบทั้งหมด : ${_newsResponse!.news![index].factCheckResponse!.claims!.length} รายการ"),
                       ],
@@ -422,7 +430,13 @@ class _WorldPageState extends State<WorldPage> {
         title: const Text("ข่าวต่างประเทศ"),
         backgroundColor: Colors.black12,
         centerTitle: true,
-        actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.search))],
+        actions: [
+          IconButton(
+              onPressed: () {
+                Navigator.pushNamed(context, SearchNewPage.routeName);
+              },
+              icon: const Icon(Icons.search)),
+        ],
       ),
       body: Column(
         children: [
@@ -437,9 +451,7 @@ class _WorldPageState extends State<WorldPage> {
                       Checkbox(
                         value: _isTranslate,
                         onChanged: (value) {
-                          setState(() {
-                            _isTranslate = value!;
-                          });
+                          _isTranslate = value!;
                           swapNews();
                         },
                       ),
