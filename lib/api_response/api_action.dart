@@ -9,6 +9,7 @@ class ApiAction {
   String msNewsApiKey = "f9630a02661f41c1a60f42b8932ea2ba"; //key Bing News Search api
   String newsDataApiKey = "pub_5523073a37a1c1f1ace0fad685bdec4808963"; //key NewsData api
   String azureAiTranslatorApiKey = "B4rmGh3hSwENanvIJtuQDAqSxROxB8ivQY4Bt4BQPcs1CL4ksfAhJQQJ99AKACqBBLyXJ3w3AAAbACOG4kP8"; // key Azure AI Translator
+  String aiForThaiApiKey = "FqpwcASpPzy7CrXZX1qvx6Ut8aeNrGWh"; //key ai for thai
 
   ApiAction();
 
@@ -112,5 +113,56 @@ class ApiAction {
     var data = json.decode(response.body);
     print("จาก translateText : $data");
     return data[0]['translations'][0]['text'];
+  }
+
+  Future<NewsResponse> getBingSearchNewsApi({
+    String? cc, //รหัสประเทศ 2 ตัวอักษรของประเทศที่ผลลัพธ์มาจาก สำหรับรายการค่าที่เป็นไปได้ ต้องระบุส่วนหัว Accept-Language ด้วย
+    String? category, //หมวดหมู่ข่าว ใช้คู่กับ mkt
+    int? count, //จำนวนบทความข่าว 10-100
+    String? freshness, //กรองบทความข่าวโดยช่วงอายุ Day,Week,Month คือ 1,7,30 วันตามลำดับ
+    String? mkt, //ประเทศที่ผู้ใช้ทำการขอข้อมูล ห้ามใช้กับ cc
+    int? offset, //จำนวนบทความข่าวที่ต้องข้าม
+    bool originalImg = true, //ถ้าเป็น true จะชี้ไปยังภาพต้นฉบับ
+    String? q, //คำค้นหาของผู้ใช้ , หากต้องการจำกัดผลลัพธ์ให้เฉพาะโดเมนที่กำหนด ใช้ตัวดำเนินการ site: (q=fishing+site:fishing.contoso.com).
+    //safeSearch ใช้เพื่อกรองบทความข่าวที่มีเนื้อหาผู้ใหญ่ ค่าที่เป็นไปได้มีดังนี้: Off ส่งคืนบทความข่าวที่เกี่ยวข้องกับเนื้อหาผู้ใหญ่ Moderate ส่งคืนบทความข่าวที่มีข้อความเกี่ยวกับเนื้อหาผู้ใหญ่ แต่ไม่มีรูปภาพหรือวิดีโอที่เกี่ยวข้อง Strict ไม่ส่งคืนบทความข่าวที่เกี่ยวข้องกับเนื้อหาผู้ใหญ่
+    String? safeSearch,
+    String? setLang, //ภาษาของข่าว สามารถระบุภาษาได้โดยใช้รหัส 2 ตัวอักษรหรือ 4 ตัวอักษร
+    int? since, //ส่งคืนหัวข้อที่กำลังเป็นที่นิยมที่พบในวันที่และเวลาที่ระบุ หรือหลังจากนั้น วันเวลาที่ระบุเป็น Unix timestamp
+    String? sortBy, //ส่งคืนค่าตามวันจากใหม่ไปเก่า Date , ส่งคืนหัวข้อข่าวที่จัดเรียงตามความเกี่ยวข้อง Relevance
+  }) async {
+    String url = "https://api.bing.microsoft.com/v7.0/news/search?";
+    if (cc != null && mkt == null) url += "&cc=$cc";
+    if (category != null) url += "&category=$category";
+    if (count != null) url += "&category=$count";
+    if (freshness != null) url += "&category=$freshness";
+    if (mkt != null) url += "&category=$mkt";
+    if (offset != null) url += "&category=$offset";
+
+    url += "&category=$originalImg";
+
+    if (q != null) {
+      if (q.indexOf("&") != -1) {
+        q = q.replaceAll("&", " and ");
+      }
+      url += "&category=$q";
+    }
+    if (safeSearch != null) url += "&category=$safeSearch";
+    if (setLang != null) url += "&category=$setLang";
+    if (since != null) url += "&category=$since";
+    if (sortBy != null) url += "&category=$sortBy";
+
+    var response = await http.get(
+      Uri.parse(url),
+      headers: {"Ocp-Apim-Subscription-Key": msNewsApiKey},
+    );
+    Map<String, dynamic> data = json.decode(response.body);
+    print("จาก getBingSearchNewsApi : $data");
+    NewsResponse newsResponse = NewsResponse.fromJsonBingNewsSearch(data);
+    //print(newsResponse.news.length);
+    for (var i = 0; i < newsResponse.news!.length; i++) {
+      newsResponse.news![i].factCheckResponse = await getFactCheckApi(query: newsResponse.news![i].title);
+    }
+
+    return newsResponse;
   }
 }

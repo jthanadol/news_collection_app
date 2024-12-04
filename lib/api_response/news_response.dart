@@ -81,7 +81,7 @@ class News {
       linkNews: json['url'],
       description: json['description'],
       pubDate: json['datePublished'],
-      image_url: json['image']['thumbnail']['contentUrl'],
+      image_url: json['image']['contentUrl'],
       source_id: json['provider'][0]['name'],
       source_icon: json['provider'][0]['image']['thumbnail']['contentUrl'],
     );
