@@ -1,12 +1,12 @@
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:html/parser.dart' as html_parser;
 
 class WebScraping {
+  final Dio _dio = Dio(BaseOptions(responseType: ResponseType.plain));
   Future<List<String>> scrapingThisWeb(String url) async {
-    var resposen = await http.get(Uri.parse(url));
-    String html_string = resposen.body;
-    var html = html_parser.parse(html_string);
-    print(html_string);
+    var resposen = await _dio.get(url);
+    String htmlString = resposen.data;
+    var html = html_parser.parse(htmlString);
 
     var listH2 = html.querySelectorAll('h2');
     var listP = html.querySelectorAll('p');
@@ -17,17 +17,17 @@ class WebScraping {
     List<int> indexP = [];
     for (var i = 0; i < listH2.length; i++) {
       if (indexH2.length == 0) {
-        indexH2.add(html_string.indexOf("</h2>"));
+        indexH2.add(htmlString.indexOf("</h2>"));
       } else {
-        indexH2.add(html_string.indexOf("</h2>", indexH2[i - 1] + 1));
+        indexH2.add(htmlString.indexOf("</h2>", indexH2[i - 1] + 1));
       }
     }
 
     for (var i = 0; i < listP.length; i++) {
       if (indexP.length == 0) {
-        indexP.add(html_string.indexOf("</p>"));
+        indexP.add(htmlString.indexOf("</p>"));
       } else {
-        indexP.add(html_string.indexOf("</p>", indexP[i - 1] + 1));
+        indexP.add(htmlString.indexOf("</p>", indexP[i - 1] + 1));
       }
     }
 
@@ -73,7 +73,6 @@ class WebScraping {
         }
       }
     }
-    //print("จบ loop");
 
     return content;
   }

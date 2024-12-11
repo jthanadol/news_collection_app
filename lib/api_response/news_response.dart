@@ -14,19 +14,27 @@ class NewsResponse {
   }
 
   factory NewsResponse.fromJsonNewsData(Map<String, dynamic> json) {
-    List<News> n = [];
-    for (var item in json['results']) {
-      n.add(News.fromNewsData(item));
+    if (json['results'] != null) {
+      List<News> n = [];
+      for (var item in json['results']) {
+        n.add(News.fromNewsData(item));
+      }
+      return NewsResponse(news: n, nextPage: json['nextPage']);
+    } else {
+      return NewsResponse(news: []);
     }
-    return NewsResponse(news: n, nextPage: json['nextPage']);
   }
 
   factory NewsResponse.fromJsonBingNewsSearch(Map<String, dynamic> json) {
-    List<News> n = [];
-    for (var item in json['value']) {
-      n.add(News.fromNewsData(item));
+    if (json['value'] != null) {
+      List<News> n = [];
+      for (var item in json['value']) {
+        n.add(News.fromBingNewsSearch(item));
+      }
+      return NewsResponse(news: n);
+    } else {
+      return NewsResponse(news: []);
     }
-    return NewsResponse(news: n);
   }
 }
 
@@ -81,9 +89,9 @@ class News {
       linkNews: json['url'],
       description: json['description'],
       pubDate: json['datePublished'],
-      image_url: json['image']['contentUrl'],
-      source_id: json['provider'][0]['name'],
-      source_icon: json['provider'][0]['image']['thumbnail']['contentUrl'],
+      image_url: json['image'] != null ? json['image']['contentUrl'] : null,
+      source_id: json['provider'] != null ? json['provider'][0]['name'] : null,
+      source_icon: json['provider'] != null ? (json['provider'][0]['image'] != null ? json['provider'][0]['image']['thumbnail']['contentUrl'] : null) : null,
     );
   }
 }

@@ -48,10 +48,17 @@ class _ReadNewPageState extends State<ReadNewPage> {
       });
       _newsTranslate = News.copy(_newsRaw!);
       _newsTranslate!.title = await ApiAction().translateText(taget: _newsTranslate!.title!, to: "th");
-      for (var i = 0; i < _newsTranslate!.content!.length; i++) {
-        if (!validators.isURL(_newsTranslate!.content![i])) {
-          _newsTranslate!.content![i] = await ApiAction().translateText(taget: _newsTranslate!.content![i], to: "th");
+
+      List<Future<String>> futureContent = _newsTranslate!.content!.map((c) {
+        if (!validators.isURL(c)) {
+          return ApiAction().translateText(taget: c, to: "th");
+        } else {
+          return c as Future<String>;
         }
+      }).toList();
+      List<String> contents = await Future.wait(futureContent);
+      for (var i = 0; i < _newsTranslate!.content!.length; i++) {
+        _newsTranslate!.content![i] = contents[i];
       }
       swapNews();
     } catch (e) {
@@ -108,7 +115,7 @@ class _ReadNewPageState extends State<ReadNewPage> {
                       errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                     ),
                   )
-                else
+                else if (!validators.isURL(_news!.content![index]))
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Text(_news!.content![index]),

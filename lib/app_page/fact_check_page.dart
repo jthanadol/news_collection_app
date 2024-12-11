@@ -105,7 +105,7 @@ class _FactCheckPageState extends State<FactCheckPage> {
                             children: [
                               Text("ข้อมูลการตรวจสอบ : ${_factCheckResponse!.claims![index].claimReview![i].textualRating}"),
                               Text(_factCheckResponse!.claims![index].claimReview![i].title!),
-                              Text(DateFormat.yMMMEd().format(DateTime.parse(_factCheckResponse!.claims![index].claimDate!))),
+                              Text(DateFormat.yMMMEd().format(DateTime.parse(_factCheckResponse!.claims![index].claimReview![i].reviewDate!))),
                             ],
                           ),
                       ],
