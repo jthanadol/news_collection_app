@@ -72,7 +72,7 @@ class _HomePageState extends State<HomePage> {
         _errorMessage = null;
       });
 
-      _newsResponse = await ApiAction().getNewsDataApi(
+      _newsResponse = await ApiAction.apiAction.getNewsDataApi(
         category: mapCategory[_category],
         country: _country,
         language: _language,
@@ -92,7 +92,7 @@ class _HomePageState extends State<HomePage> {
         _errorMessage = null;
         _fillData = true;
       });
-      var newsNext = await ApiAction().getNewsDataApi(
+      var newsNext = await ApiAction.apiAction.getNewsDataApi(
         category: mapCategory[_category],
         country: _country,
         language: _language,
@@ -122,6 +122,7 @@ class _HomePageState extends State<HomePage> {
                     image = Image.network(
                       _newsResponse!.news![index].image_url!,
                       errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                      width: 150,
                     );
                   } else {
                     image = null;

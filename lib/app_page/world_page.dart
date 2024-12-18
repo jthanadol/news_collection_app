@@ -182,7 +182,7 @@ class _WorldPageState extends State<WorldPage> {
     'นิวแคลิโดเนีย': 'nc',
     'นิวซีแลนด์': 'nz',
     'นิการากัว': 'ni',
-    'ไนจีเรีย': 'ne',
+    'ไนเจอร์': 'ne',
     'ไนจีเรีย': 'ng',
     'เกาหลีเหนือ': 'kp',
     'นอร์เวย์': 'no',
@@ -229,7 +229,6 @@ class _WorldPageState extends State<WorldPage> {
     'ไต้หวัน': 'tw',
     'ทาจิกิสถาน': 'tj',
     'แทนซาเนีย': 'tz',
-    'ไทย': 'th',
     'ติมอร์ตะวันออก': 'tl',
     'โตโก': 'tg',
     'ตองกา': 'to',
@@ -283,7 +282,7 @@ class _WorldPageState extends State<WorldPage> {
         _newTranslate = null;
       });
 
-      _newsRaw = await ApiAction().getNewsDataApi(
+      _newsRaw = await ApiAction.apiAction.getNewsDataApi(
         category: mapCategory[_category],
         country: countryCodes[_country],
         language: _language,
@@ -307,7 +306,7 @@ class _WorldPageState extends State<WorldPage> {
         _errorMessage = null;
         _fillData = true;
       });
-      var newsNext = await ApiAction().getNewsDataApi(
+      var newsNext = await ApiAction.apiAction.getNewsDataApi(
         category: mapCategory[_category],
         country: countryCodes[_country],
         language: _language,
@@ -319,9 +318,9 @@ class _WorldPageState extends State<WorldPage> {
       _newsRaw!.nextPage = n.nextPage;
 
       for (var i = 0; i < newsNext.news!.length; i++) {
-        newsNext.news![i].title = await ApiAction().translateText(taget: newsNext.news![i].title!, to: "th");
+        newsNext.news![i].title = await ApiAction.apiAction.translateText(taget: newsNext.news![i].title!, to: "th");
         if (newsNext.news![i].description != null) {
-          newsNext.news![i].description = await ApiAction().translateText(taget: newsNext.news![i].description!, to: "th");
+          newsNext.news![i].description = await ApiAction.apiAction.translateText(taget: newsNext.news![i].description!, to: "th");
         }
       }
 
@@ -344,9 +343,9 @@ class _WorldPageState extends State<WorldPage> {
       });
       _newTranslate = NewsResponse.copy(_newsRaw!);
       for (var i = 0; i < _newsResponse!.news!.length; i++) {
-        _newTranslate!.news![i].title = await ApiAction().translateText(taget: _newTranslate!.news![i].title!, to: "th");
+        _newTranslate!.news![i].title = await ApiAction.apiAction.translateText(taget: _newTranslate!.news![i].title!, to: "th");
         if (_newTranslate!.news![i].description != null) {
-          _newTranslate!.news![i].description = await ApiAction().translateText(taget: _newTranslate!.news![i].description!, to: "th");
+          _newTranslate!.news![i].description = await ApiAction.apiAction.translateText(taget: _newTranslate!.news![i].description!, to: "th");
         }
       }
       swapNews();
@@ -377,7 +376,11 @@ class _WorldPageState extends State<WorldPage> {
                 itemBuilder: (context, index) {
                   Image? image;
                   if (_newsResponse!.news![index].image_url != null) {
-                    image = Image.network(_newsResponse!.news![index].image_url!, errorBuilder: (context, error, stackTrace) => SizedBox.shrink());
+                    image = Image.network(
+                      _newsResponse!.news![index].image_url!,
+                      errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                      width: 150,
+                    );
                   } else {
                     image = null;
                   }
@@ -400,8 +403,8 @@ class _WorldPageState extends State<WorldPage> {
                         Text(DateFormat.yMMMEd().format(DateTime.parse(_newsResponse!.news![index].pubDate!))),
                         if (_newsResponse!.news![index].factCheckResponse!.claims!.isEmpty)
                           Container(
-                            child: const Text("ไม่พบการตรวจสอบ"),
                             color: Colors.amber,
+                            child: const Text("ไม่พบการตรวจสอบ"),
                           )
                         else
                           Text("พบการตรวจสอบทั้งหมด : ${_newsResponse!.news![index].factCheckResponse!.claims!.length} รายการ"),
@@ -411,7 +414,7 @@ class _WorldPageState extends State<WorldPage> {
                   );
                 },
                 controller: _scrollController,
-                separatorBuilder: (context, index) => Divider(),
+                separatorBuilder: (context, index) => const Divider(),
               ),
             ),
             if (_fillData) const Text("กำลังโหลดข้อมูลเพิ่มเติม . . ."),

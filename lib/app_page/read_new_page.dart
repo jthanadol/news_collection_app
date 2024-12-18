@@ -1,5 +1,9 @@
+import 'dart:ffi';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:news_app/api_response/api_action.dart';
 import 'package:news_app/api_response/news_response.dart';
 import 'package:news_app/service/web_scraping.dart';
@@ -21,6 +25,16 @@ class _ReadNewPageState extends State<ReadNewPage> {
   bool _isTranslate = true; //สถานะการแปล
   String? _errorMessage;
   Color colorTranslate = Colors.blue;
+  List<String> playList = [];
+  bool isLoadingAudio = false;
+  bool playAudio = false;
+  final player = AudioPlayer();
+
+  @override
+  void dispose() {
+    player.dispose();
+    super.dispose();
+  }
 
   Future<void> getData(String url) async {
     try {
@@ -29,9 +43,10 @@ class _ReadNewPageState extends State<ReadNewPage> {
         _errorMessage = null;
       });
 
-      _newsRaw!.content = await WebScraping().scrapingThisWeb(url);
+      _newsRaw!.content = await WebScraping.webScraping.scrapingThisWeb(url);
 
-      getTranslate();
+      await getTranslate();
+      getAudio();
 
       setState(() {
         _isLoading = false;
@@ -47,23 +62,93 @@ class _ReadNewPageState extends State<ReadNewPage> {
         _errorMessage = null;
       });
       _newsTranslate = News.copy(_newsRaw!);
-      _newsTranslate!.title = await ApiAction().translateText(taget: _newsTranslate!.title!, to: "th");
+      _newsTranslate!.title = await ApiAction.apiAction.translateText(taget: _newsTranslate!.title!, to: "th");
 
-      List<Future<String>> futureContent = _newsTranslate!.content!.map((c) {
-        if (!validators.isURL(c)) {
-          return ApiAction().translateText(taget: c, to: "th");
-        } else {
-          return c as Future<String>;
-        }
-      }).toList();
-      List<String> contents = await Future.wait(futureContent);
       for (var i = 0; i < _newsTranslate!.content!.length; i++) {
-        _newsTranslate!.content![i] = contents[i];
+        if (!validators.isURL(_newsTranslate!.content![i])) {
+          _newsTranslate!.content![i] = await ApiAction.apiAction.translateText(taget: _newsTranslate!.content![i], to: "th");
+        }
       }
+
       swapNews();
     } catch (e) {
       _errorMessage = e.toString();
     }
+  }
+
+  Future<void> playAudioFile() async {
+    if (!isLoadingAudio) {
+      if (playAudio) {
+        player.stop();
+        setState(() {
+          playAudio = !playAudio;
+        });
+      } else {
+        player.play();
+        setState(() {
+          playAudio = !playAudio;
+        });
+      }
+    }
+  }
+
+  Future<void> setPlayList() async {
+    ConcatenatingAudioSource concatenatingAudioSource = ConcatenatingAudioSource(children: playList.map((item) => AudioSource.file(item)).toList());
+    await player.setAudioSource(concatenatingAudioSource);
+  }
+
+  Future<void> getAudio() async {
+    setState(() {
+      isLoadingAudio = true;
+    });
+    int textLimit = 150; //จำนวนตัวอักษรสูงสุดที่ vaja9 api รับได้
+    List<String> content = _newsTranslate!.content!;
+    List<String> word = []; //คำในข้อความ
+    String textContent = "";
+    for (var i = 0; i < content.length; i++) {
+      textContent = content[i].replaceAll("%", " เปอร์เซ็น");
+      textContent = textContent.replaceAll("\"", "");
+      textContent = textContent.replaceAll("'", "");
+      textContent.trim();
+      if (!validators.isURL(textContent) && textContent.isNotEmpty) {
+        if (textContent.length > textLimit) {
+          int sumLength = 0; //จำนวนตัวอักษรที่ถูกแปลงเป็นเสียงแล้ว
+          String text = ""; //ข้อความที่จะแปลงเสียง
+          int indexOfLastWord = 0; //ตำแหน่งคำสุดท้าย
+          for (var j = 0; j < (textContent.length / textLimit).ceil(); j++) {
+            if ((sumLength + textLimit) > textContent.length) {
+              text = textContent.substring(sumLength, textContent.length);
+              text.trim();
+              if (text.isNotEmpty) {
+                playList.add(await ApiAction.apiAction.getVaja9Api(input_text: text));
+                sumLength = textContent.length;
+                print(text);
+              }
+            } else {
+              word = await ApiAction.apiAction.separateWord(text: textContent.substring(sumLength, sumLength + textLimit));
+              indexOfLastWord = textContent.indexOf(word[word.length - 2], sumLength); //-2 เพื่อเอาคำก่อนตัวสุดท้าย
+              text = textContent.substring(sumLength, indexOfLastWord);
+              text.trim();
+              if (text.isNotEmpty) {
+                playList.add(await ApiAction.apiAction.getVaja9Api(input_text: text)); //ดาวน์โหลดไฟล์เสียงและเก็บที่อยู่ลง playList
+                sumLength += text.length;
+                Future.delayed(const Duration(seconds: 1)); //หยุด 1 วิ เพื่อไม่ให้เกิน Rate limit ของ Vaja9
+                print(text);
+              }
+            }
+          }
+        } else {
+          playList.add(await ApiAction.apiAction.getVaja9Api(input_text: textContent));
+          print(textContent);
+        }
+        Future.delayed(const Duration(seconds: 1)); //หยุด 1 วิ เพื่อไม่ให้เกิน Rate limit ของ Vaja9
+      }
+    }
+    setPlayList();
+
+    setState(() {
+      isLoadingAudio = false;
+    });
   }
 
   bool checkDuplicateImage(String url) {
@@ -155,7 +240,7 @@ class _ReadNewPageState extends State<ReadNewPage> {
                           children: [
                             Text("ข้อมูลการตรวจสอบ : ${c.claimReview![i].textualRating}"),
                             Text(c.claimReview![i].title!),
-                            Text(DateFormat.yMMMEd().format(DateTime.parse(c.claimDate!))),
+                            Text(DateFormat.yMMMEd().format(DateTime.parse(c.claimReview![i].reviewDate!))),
                           ],
                         ),
                     ],
@@ -217,7 +302,13 @@ class _ReadNewPageState extends State<ReadNewPage> {
     return Scaffold(
       appBar: AppBar(
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.headphones)),
+          IconButton(
+            onPressed: () {
+              playAudioFile();
+            },
+            icon: const Icon(Icons.headphones),
+            color: (playAudio) ? Colors.redAccent : Colors.black,
+          ),
           IconButton(
             onPressed: () {
               _isTranslate = !_isTranslate;
@@ -237,11 +328,11 @@ class _ReadNewPageState extends State<ReadNewPage> {
               return [
                 PopupMenuItem<String>(
                   value: 'Option 1',
-                  child: IconButton(onPressed: () {}, icon: Icon(Icons.download)),
+                  child: IconButton(onPressed: () {}, icon: const Icon(Icons.download)),
                 ),
                 PopupMenuItem<String>(
                   value: 'Option 2',
-                  child: IconButton(onPressed: () {}, icon: Icon(Icons.share_sharp)),
+                  child: IconButton(onPressed: () {}, icon: const Icon(Icons.share_sharp)),
                 ),
               ];
             },

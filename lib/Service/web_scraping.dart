@@ -3,6 +3,8 @@ import 'package:html/parser.dart' as html_parser;
 
 class WebScraping {
   final Dio _dio = Dio(BaseOptions(responseType: ResponseType.plain));
+  static final WebScraping webScraping = WebScraping();
+
   Future<List<String>> scrapingThisWeb(String url) async {
     var resposen = await _dio.get(url);
     String htmlString = resposen.data;
@@ -48,6 +50,7 @@ class WebScraping {
 
         if (indexP[0] < indexH2[0]) {
           con = listP[0].text.trim(); // .text คือเขาข้อมูลภายใน tag ส่วน .trim ใช้ลบช่องว่างหน้าหลังออก
+          con.replaceAll('\n', '');
           img = getSrcInImg(con);
           if (img != null) {
             //print("ใส่ของจาก p ที่เป็น img : $img");
@@ -60,6 +63,7 @@ class WebScraping {
           indexP.removeAt(0);
         } else {
           con = listH2[0].text.trim();
+          con.replaceAll('\n', '');
           img = getSrcInImg(con);
           if (img != null) {
             //print("ใส่ของจาก h2 ที่เป็น img : $img");

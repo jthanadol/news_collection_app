@@ -1,14 +1,18 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'fact_check_tools_response.dart';
 import 'news_response.dart';
 
 class ApiAction {
-  final Dio _dio = Dio(BaseOptions(responseType: ResponseType.plain));
+  static final ApiAction apiAction = ApiAction(); //ใช้เป็นตัวกลางในการเรียกใช้ method จากไฟล์อื่นโดยไม่ต้องสร้าง object ซ้ำ
+  final _dio = Dio(); //ใช้สำหรับโหลดไฟล์เสียง
   String factCheckApiKey = "AIzaSyAdumZj0pFWv-G2vLKhkunwZ10wm_IlPE0"; //key fact chack tools api
   String msNewsApiKey = "f9630a02661f41c1a60f42b8932ea2ba"; //key Bing News Search api
-  String newsDataApiKey = "pub_5523073a37a1c1f1ace0fad685bdec4808963"; //key NewsData api
+  String newsDataApiKey = "pub_62137fb070f1770c76b5c6f92993530c07d4e"; //key NewsData api
   String azureAiTranslatorApiKey = "B4rmGh3hSwENanvIJtuQDAqSxROxB8ivQY4Bt4BQPcs1CL4ksfAhJQQJ99AKACqBBLyXJ3w3AAAbACOG4kP8"; // key Azure AI Translator
   String aiForThaiApiKey = "FqpwcASpPzy7CrXZX1qvx6Ut8aeNrGWh"; //key ai for thai
 
@@ -40,8 +44,8 @@ class ApiAction {
 
     url += "key=$factCheckApiKey";
 
-    var response = await _dio.get(url);
-    Map<String, dynamic> data = json.decode(response.data);
+    var response = await http.get(Uri.parse(url));
+    Map<String, dynamic> data = json.decode(response.body);
     //print("จาก getFactCheckApi : $data");
 
     return FactCheckResponse.fromJson(data);
@@ -83,40 +87,41 @@ class ApiAction {
     if (size != null) url += "&size=$size";
     if (page != null) url += "&page=$page";
 
-    var response = await _dio.get(url);
-    Map<String, dynamic> data = json.decode(response.data);
+    var response = await http.get(Uri.parse(url));
+    Map<String, dynamic> data = json.decode(utf8.decode(response.bodyBytes));
     print("จาก getNewsDataApi : $data");
     NewsResponse newsResponse = NewsResponse.fromJsonNewsData(data);
 
+    //ค้นหาการตรวจสอบข้อเท็จจริงกับ fact check tools api
     List<Future<FactCheckResponse>> futureFactCheck = newsResponse.news!.map((n) => getFactCheckApi(query: n.title)).toList();
     List<FactCheckResponse> factcheck = await Future.wait(futureFactCheck);
-
     for (var i = 0; i < newsResponse.news!.length; i++) {
       newsResponse.news![i].factCheckResponse = factcheck[i];
     }
-
     return newsResponse;
   }
 
-  Future<String> translateText({required String taget, required String to, String? from}) async {
+  Future<String> translateText({
+    required String taget, //ข้อความที่จะแปล
+    required String to, //จะแปลเป็นภาษาอะไร
+    String? from, //ข้อความ taget เป็นภาษาอะไร ถ้าไม่ใส่ตัว Api จะตรวจจับให้
+  }) async {
     String url = "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=$to";
     if (from != null) url += "&from=$from";
 
-    Map<String, String> head = {
-      "Content-type": "application/json",
-      "Ocp-Apim-Subscription-Key": azureAiTranslatorApiKey,
-      "Ocp-Apim-Subscription-Region": "southeastasia",
-    };
-    _dio.options.headers = head;
-    var response = await _dio.post(url,
-        data: json.encode([
-          {"text": "$taget"}
+    var response = await http.post(Uri.parse(url),
+        headers: {
+          "Content-type": "application/json",
+          "Ocp-Apim-Subscription-Key": azureAiTranslatorApiKey,
+          "Ocp-Apim-Subscription-Region": "southeastasia",
+        },
+        body: json.encode([
+          {"text": taget}
         ]));
 
-    var data = json.decode(response.data);
-    print("จาก translateText : $data");
+    var data = json.decode(response.body);
+    //print("จาก translateText : $data");
 
-    _dio.options.headers = {};
     return data[0]['translations'][0]['text'];
   }
 
@@ -156,32 +161,39 @@ class ApiAction {
     if (since != null) url += "&since=$since";
     if (sortBy != null) url += "&sortBy=$sortBy";
 
-    _dio.options.headers = {"Ocp-Apim-Subscription-Key": msNewsApiKey};
-    var response = await _dio.get(url);
-    Map<String, dynamic> data = json.decode(response.data);
+    var response = await http.get(
+      Uri.parse(url),
+      headers: {"Ocp-Apim-Subscription-Key": msNewsApiKey},
+    );
+    Map<String, dynamic> data = json.decode(response.body);
     print("จาก getBingSearchNewsApi : $data");
     NewsResponse newsResponse = NewsResponse.fromJsonBingNewsSearch(data);
 
-    //เช็คการตัวสอบข้อเท็จจริง
+    //เช็คการตรวจสอบข้อเท็จจริง
     List<Future<FactCheckResponse>> futureFactCheck = newsResponse.news!.map((n) => getFactCheckApi(query: n.title)).toList();
     List<FactCheckResponse> factcheck = await Future.wait(futureFactCheck);
     for (var i = 0; i < newsResponse.news!.length; i++) {
       newsResponse.news![i].factCheckResponse = factcheck[i];
     }
 
-    _dio.options.headers = {};
     return newsResponse;
   }
 
-  Future<List<String>> separateWord({
+  Future<List<String>> separateNounWord({
     required String text, //ข้อความที่ต้องการตัดคำ
   }) async {
-    String url = "https://api.aiforthai.in.th/tpos?text=$text";
-    _dio.options.headers = {
-      "Apikey": aiForThaiApiKey,
-    };
-    var response = await _dio.get(url);
-    var data = json.decode(response.data);
+    String url = "https://api.aiforthai.in.th/tpos";
+
+    var response = await http.post(
+      Uri.parse(url),
+      headers: {
+        "Apikey": aiForThaiApiKey,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "text=$text",
+    );
+
+    var data = json.decode(response.body);
     List<dynamic> words = data["words"];
     List<String> noun = [];
 
@@ -191,6 +203,65 @@ class ApiAction {
         noun.add(words[i]);
       }
     }
+    //print(noun.toString());
     return noun;
+  }
+
+  Future<String> getVaja9Api({
+    required String input_text, //ข้อความที่ต้องการสังเคราะห์เสียง (สูงสุดไม่เกิน 300 ตัวอักษร)
+    int speaker = 0, //ประเภทของเสียงที่ต้องการ | 0 : เสียงผู้ชาย | 1 : เสียงผู้หญิง | 2 : เสียงเด็กผู้ชาย | 3 : เสียงเด็กผู้หญิง
+    int phrase_break = 0, //ประเภทของการหยุดเว้นวรรค | 0 : หยุดเว้นวรรคแบบอัตโนมัติ | 1 : ไม่หยุดเว้นวรรค
+    int audiovisual = 0, //ประเภทของโมเดล | 0 : โมเดลสังเคราะห์เสียง | 1 : โมเดลสังเคราะห์เสียง และภาพ
+  }) async {
+    //print(input_text);
+    var response = await http.post(
+      Uri.parse("https://api.aiforthai.in.th/vaja9/synth_audiovisual"),
+      headers: {"Apikey": aiForThaiApiKey, "Content-Type": "application/json"},
+      body: json.encode({"input_text": input_text, "speaker": speaker, "phrase_break": phrase_break, "audiovisual": audiovisual}),
+    );
+    var data = json.decode(response.body);
+
+    for (;;) {
+      if (data["message"] == null) {
+        break;
+      }
+      response = await http.post(
+        Uri.parse("https://api.aiforthai.in.th/vaja9/synth_audiovisual"),
+        headers: {"Apikey": aiForThaiApiKey, "Content-Type": "application/json"},
+        body: json.encode({"input_text": input_text, "speaker": speaker, "phrase_break": phrase_break, "audiovisual": audiovisual}),
+      );
+      data = json.decode(response.body);
+    }
+    String wavUrl = data['wav_url'];
+    await Future.delayed(const Duration(seconds: 1)); //หยุด 1 วิเพื่อไม่ให้เกิน rate limit
+    //print(wavUrl);
+    Directory directory = await getTemporaryDirectory();
+    String saveFile = wavUrl.substring(wavUrl.lastIndexOf('/'));
+    saveFile = "${directory.path}/audio$saveFile";
+    //print(saveFile);
+    Options options = Options(headers: {"Apikey": aiForThaiApiKey});
+    await _dio.download(wavUrl, saveFile, options: options);
+    //print("โหลดเสร็จเสร็จ");
+    _dio.interceptors.clear();
+    return saveFile;
+  }
+
+  Future<List<String>> separateWord({
+    required String text, //ข้อความที่ต้องการตัดคำ
+  }) async {
+    String url = "https://api.aiforthai.in.th/tpos";
+    //print("separateWord : $text");
+    var response = await http.post(
+      Uri.parse(url),
+      headers: {
+        "Apikey": aiForThaiApiKey,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "text=$text",
+    );
+    var data = json.decode(response.body);
+    List<dynamic> dataWord = data["words"];
+    List<String> words = dataWord.map((item) => item.toString()).toList();
+    return words;
   }
 }

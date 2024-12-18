@@ -15,7 +15,8 @@ class FactCheckPage extends StatefulWidget {
 class _FactCheckPageState extends State<FactCheckPage> {
   FactCheckResponse? _factCheckResponse;
   bool _isLoading = false; //สถานะการโหลดข้อมูล
-  bool _fillData = false;
+  bool _fillData = false; //สถานะโหลดข้อมูลเพิ่ม
+  bool _isTranslate = true; //สถานะการแปล
   String? _errorMessage; //เก็บข้อความ error
   final ScrollController _scrollController = ScrollController();
 
@@ -48,7 +49,7 @@ class _FactCheckPageState extends State<FactCheckPage> {
         _errorMessage = null;
       });
 
-      _factCheckResponse = await ApiAction().getFactCheckApi(reviewPublisherSiteFilter: "factcheckthailand.afp.com");
+      _factCheckResponse = await ApiAction.apiAction.getFactCheckApi(reviewPublisherSiteFilter: "factcheckthailand.afp.com");
 
       setState(() {
         _isLoading = false;
@@ -65,7 +66,7 @@ class _FactCheckPageState extends State<FactCheckPage> {
         _fillData = true;
       });
 
-      var factCheckNext = await ApiAction().getFactCheckApi(
+      var factCheckNext = await ApiAction.apiAction.getFactCheckApi(
         reviewPublisherSiteFilter: "factcheckthailand.afp.com",
         pageToken: _factCheckResponse!.nextPageToken,
       );
@@ -134,14 +135,35 @@ class _FactCheckPageState extends State<FactCheckPage> {
         centerTitle: true,
         actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.search))],
       ),
-      body: Center(
-        child: Stack(
-          children: [
-            if (!_isLoading) buildPage(),
-            if (_errorMessage != null) buildErrorPage(),
-            if (_isLoading) buildLoadingOverlay(),
-          ],
-        ),
+      body: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Checkbox(
+                value: _isTranslate,
+                onChanged: (value) {
+                  _isTranslate = value!;
+                  setState(() {});
+                  //swapNews();
+                },
+              ),
+              const Padding(
+                padding: EdgeInsets.only(right: 8),
+                child: Text("แปลภาษา"),
+              ),
+            ],
+          ),
+          Expanded(
+            child: Stack(
+              children: [
+                if (!_isLoading) buildPage(),
+                if (_errorMessage != null) buildErrorPage(),
+                if (_isLoading) buildLoadingOverlay(),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
