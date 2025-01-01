@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:news_app/api_response/api_action.dart';
 import 'package:news_app/api_response/news_response.dart';
 import 'package:news_app/app_page/read_new_page.dart';
 import 'package:news_app/app_page/search_new_page.dart';
+import 'package:news_app/config.dart';
 
 class WorldPage extends StatefulWidget {
   static const routeName = "/world_page"; //ชื่อที่ใช้อ้างถึงหน้านี้
@@ -15,250 +18,24 @@ class WorldPage extends StatefulWidget {
 
 class _WorldPageState extends State<WorldPage> {
   NewsResponse? _newsResponse; //เก็บข่าวที่จะใช้แสดงบนหน้าจอ
-  NewsResponse? _newsRaw; //เก็บข่าวที่ดึงจาก api
-  NewsResponse? _newTranslate; //เก็บข่าวที่ถูกแปล
   bool _isLoading = false; //สถานะการโหลดข้อมูลข่าวใหม่
   String? _errorMessage;
   final ScrollController _scrollController = ScrollController();
   bool _fillData = false; //สถานะการเติมข้อมูลข่าว
   bool _isTranslate = true; //สถานะว่าจะแสดงแบบแปลภาษาหรือไม่
+  bool _isNewsEnd = false; //ข้อมูลที่ขอกับ server หมดหรือยังถ้ายังเป็น false
+  bool _isLast = true; //true เรียงข่าวจากล่าสุด
 
   String? _country = 'สหรัฐอเมริกา';
-  String? _language;
   String _category = 'ธุรกิจ';
-  String? _excludedomain; //ชื่อ domain ข่าวที่ไม่ต้องการ สูงสุด 5
-  Map<String, String> mapCategory = {
-    'ธุรกิจ': 'business',
-    'อาชญากรรม': 'crime',
-    'ภายในประเทศ': 'domestic',
-    'การศึกษา': 'education',
-    'บันเทิง': 'entertainment',
-    'สิ่งแวดล้อม': 'environment',
-    'อาหาร': 'food',
-    'สุขภาพ': 'health',
-    'ไลฟ์สไตล์': 'lifestyle',
-    'อื่นๆ': 'other',
-    'การเมือง': 'politics',
-    'วิทยาศาสตร์': 'science',
-    'กีฬา': 'sports',
-    'เทคโนโลยี': 'technology',
-    'ยอดนิยม': 'top',
-    'การท่องเที่ยว': 'tourism',
-    'โลก': 'world',
-  };
-
-  Map<String, String> countryCodes = {
-    'อัฟกานิสถาน': 'af',
-    'แอลเบเนีย': 'al',
-    'แอลจีเรีย': 'dz',
-    'อันดอร์รา': 'ad',
-    'แองโกลา': 'ao',
-    'อาร์เจนตินา': 'ar',
-    'อาร์เมเนีย': 'am',
-    'ออสเตรเลีย': 'au',
-    'ออสเตรีย': 'at',
-    'อาเซอร์ไบจาน': 'az',
-    'บาฮามาส': 'bs',
-    'บาห์เรน': 'bh',
-    'บังกลาเทศ': 'bd',
-    'บาร์เบโดส': 'bb',
-    'เบลารุส': 'by',
-    'เบลเยียม': 'be',
-    'เบลีซ': 'bz',
-    'เบนิน': 'bj',
-    'เบอร์มิวดา': 'bm',
-    'ภูฏาน': 'bt',
-    'โบลิเวีย': 'bo',
-    'บอสเนียและเฮอร์เซโกวีนา': 'ba',
-    'บอตสวานา': 'bw',
-    'บราซิล': 'br',
-    'บรูไน': 'bn',
-    'บัลแกเรีย': 'bg',
-    'บูร์กินาฟาโซ': 'bf',
-    'บุรุนดี': 'bi',
-    'กัมพูชา': 'kh',
-    'แคเมอรูน': 'cm',
-    'แคนาดา': 'ca',
-    'เคปเวิร์ด': 'cv',
-    'หมู่เกาะเคย์แมน': 'ky',
-    'สาธารณรัฐแอฟริกากลาง': 'cf',
-    'ชาด': 'td',
-    'ชิลี': 'cl',
-    'จีน': 'cn',
-    'โคลอมเบีย': 'co',
-    'คอโมรอส': 'km',
-    'คองโก': 'cg',
-    'หมู่เกาะคุก': 'ck',
-    'คอสตาริกา': 'cr',
-    'โครเอเชีย': 'hr',
-    'คิวบา': 'cu',
-    'คูราเซา': 'cw',
-    'ไซปรัส': 'cy',
-    'สาธารณรัฐเช็ก': 'cz',
-    'เดนมาร์ก': 'dk',
-    'จิบูตี': 'dj',
-    'โดมินิกา': 'dm',
-    'สาธารณรัฐโดมินิกัน': 'do',
-    'สาธารณรัฐประชาธิปไตยคองโก': 'cd',
-    'เอกวาดอร์': 'ec',
-    'อียิปต์': 'eg',
-    'เอลซัลวาดอร์': 'sv',
-    'อิเควทอเรียลกินี': 'gq',
-    'เอริเทรีย': 'er',
-    'เอสโตเนีย': 'ee',
-    'สวาซิแลนด์': 'sz',
-    'เอธิโอเปีย': 'et',
-    'ฟิจิ': 'fj',
-    'ฟินแลนด์': 'fi',
-    'ฝรั่งเศส': 'fr',
-    'เฟรนช์โพลินีเซีย': 'pf',
-    'กาบอง': 'ga',
-    'กัมเบีย': 'gm',
-    'จอร์เจีย': 'ge',
-    'เยอรมนี': 'de',
-    'กานา': 'gh',
-    'ยิบรอลตาร์': 'gi',
-    'กรีซ': 'gr',
-    'เกรเนดา': 'gd',
-    'กัวเตมาลา': 'gt',
-    'กินี': 'gn',
-    'กายอานา': 'gy',
-    'เฮติ': 'ht',
-    'ฮอนดูรัส': 'hn',
-    'ฮ่องกง': 'hk',
-    'ฮังการี': 'hu',
-    'ไอซ์แลนด์': 'is',
-    'อินเดีย': 'in',
-    'อินโดนีเซีย': 'id',
-    'อิหร่าน': 'ir',
-    'อิรัก': 'iq',
-    'ไอร์แลนด์': 'ie',
-    'อิสราเอล': 'il',
-    'อิตาลี': 'it',
-    'ไอวอรีโคสต์': 'ci',
-    'จาไมกา': 'jm',
-    'ญี่ปุ่น': 'jp',
-    'เจอร์ซีย์': 'je',
-    'จอร์แดน': 'jo',
-    'คาซัคสถาน': 'kz',
-    'เคนยา': 'ke',
-    'คิริบาส': 'ki',
-    'โคโซโว': 'xk',
-    'คูเวต': 'kw',
-    'คีร์กีซสถาน': 'kg',
-    'ลาว': 'la',
-    'ลัตเวีย': 'lv',
-    'เลบานอน': 'lb',
-    'เลโซโท': 'ls',
-    'ไลบีเรีย': 'lr',
-    'ลิเบีย': 'ly',
-    'ลิกเตนสไตน์': 'li',
-    'ลิธัวเนีย': 'lt',
-    'ลักเซมเบิร์ก': 'lu',
-    'มาเก๊า': 'mo',
-    'มาซิโดเนีย': 'mk',
-    'มาดากัสการ์': 'mg',
-    'มาลาวี': 'mw',
-    'มาเลเซีย': 'my',
-    'มัลดีฟส์': 'mv',
-    'มาลี': 'ml',
-    'มอลตา': 'mt',
-    'หมู่เกาะมาร์แชล': 'mh',
-    'มอริเตเนีย': 'mr',
-    'มอริเชียส': 'mu',
-    'เม็กซิโก': 'mx',
-    'ไมโครนีเซีย': 'fm',
-    'มอลโดวา': 'md',
-    'โมนาโก': 'mc',
-    'มองโกเลีย': 'mn',
-    'มอนเตเนโกร': 'me',
-    'โมร็อกโก': 'ma',
-    'โมซัมบิก': 'mz',
-    'เมียนมาร์': 'mm',
-    'นามิเบีย': 'na',
-    'นาอูรู': 'nr',
-    'เนปาล': 'np',
-    'เนเธอร์แลนด์': 'nl',
-    'นิวแคลิโดเนีย': 'nc',
-    'นิวซีแลนด์': 'nz',
-    'นิการากัว': 'ni',
-    'ไนเจอร์': 'ne',
-    'ไนจีเรีย': 'ng',
-    'เกาหลีเหนือ': 'kp',
-    'นอร์เวย์': 'no',
-    'โอมาน': 'om',
-    'ปากีสถาน': 'pk',
-    'ปาเลา': 'pw',
-    'ปาเลสไตน์': 'ps',
-    'ปานามา': 'pa',
-    'ปาปัวนิวกินี': 'pg',
-    'ปารากวัย': 'py',
-    'เปรู': 'pe',
-    'ฟิลิปปินส์': 'ph',
-    'โปแลนด์': 'pl',
-    'โปรตุเกส': 'pt',
-    'เปอร์โตริโก': 'pr',
-    'กาตาร์': 'qa',
-    'โรมาเนีย': 'ro',
-    'รัสเซีย': 'ru',
-    'รวันดา': 'rw',
-    'เซนต์ลูเซีย': 'lc',
-    'เซนต์มาร์ติน (ดัตช์)': 'sx',
-    'ซามัว': 'ws',
-    'ซานมาริโน': 'sm',
-    'เซาตูเมและปรินซิเป': 'st',
-    'ซาอุดีอาระเบีย': 'sa',
-    'เซเนกัล': 'sn',
-    'เซอร์เบีย': 'rs',
-    'เซเชลส์': 'sc',
-    'เซียร์ราลีโอน': 'sl',
-    'สิงคโปร์': 'sg',
-    'สโลวะเกีย': 'sk',
-    'สโลวีเนีย': 'si',
-    'หมู่เกาะโซโลมอน': 'sb',
-    'โซมาเลีย': 'so',
-    'แอฟริกาใต้': 'za',
-    'เกาหลีใต้': 'kr',
-    'สเปน': 'es',
-    'ศรีลังกา': 'lk',
-    'ซูดาน': 'sd',
-    'ซูรินาเม': 'sr',
-    'สวีเดน': 'se',
-    'สวิตเซอร์แลนด์': 'ch',
-    'ซีเรีย': 'sy',
-    'ไต้หวัน': 'tw',
-    'ทาจิกิสถาน': 'tj',
-    'แทนซาเนีย': 'tz',
-    'ติมอร์ตะวันออก': 'tl',
-    'โตโก': 'tg',
-    'ตองกา': 'to',
-    'ตรินิแดดและโตเบโก': 'tt',
-    'ตูนิเซีย': 'tn',
-    'ตุรกี': 'tr',
-    'เติร์กเมนิสถาน': 'tm',
-    'ตูวาลู': 'tv',
-    'ยูกันดา': 'ug',
-    'ยูเครน': 'ua',
-    'สหรัฐอาหรับเอมิเรตส์': 'ae',
-    'สหราชอาณาจักร': 'gb',
-    'สหรัฐอเมริกา': 'us',
-    'อุรุกวัย': 'uy',
-    'อุซเบกิสถาน': 'uz',
-    'วานูอาตู': 'vu',
-    'วาติกัน': 'va',
-    'เวเนซุเอลา': 've',
-    'เวียดนาม': 'vi',
-    'หมู่เกาะบริติชเวอร์จิน': 'vg',
-    'โลก': 'wo',
-    'เยเมน': 'ye',
-    'แซมเบีย': 'zm',
-    'ซิมบับเว': 'zw',
-  };
+  String _date = 'last';
+  final category = Config.config.category;
+  final country = Config.config.country;
 
   @override
   void initState() {
     super.initState();
-    getNewsFromNewsData();
+    getNews();
     _scrollController.addListener(_onScroll);
   }
 
@@ -270,27 +47,18 @@ class _WorldPageState extends State<WorldPage> {
 
   void _onScroll() {
     if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
-      getNewsFromNewsDataNextPage();
+      getNewsNextPage();
     }
   }
 
-  Future<void> getNewsFromNewsData() async {
+  Future<void> getNews() async {
     try {
       setState(() {
         _isLoading = true;
         _errorMessage = null;
-        _newTranslate = null;
       });
 
-      _newsRaw = await ApiAction.apiAction.getNewsDataApi(
-        category: mapCategory[_category],
-        country: countryCodes[_country],
-        language: _language,
-        excludedomain: _excludedomain,
-      );
-      _newsResponse = _newsRaw;
-
-      getTranslate();
+      _newsResponse = await ApiAction.apiAction.getNews(category: category[_category]!, country: country[_country]!, date: _date);
 
       setState(() {
         _isLoading = false;
@@ -300,69 +68,29 @@ class _WorldPageState extends State<WorldPage> {
     }
   }
 
-  Future<void> getNewsFromNewsDataNextPage() async {
-    try {
-      setState(() {
-        _errorMessage = null;
-        _fillData = true;
-      });
-      var newsNext = await ApiAction.apiAction.getNewsDataApi(
-        category: mapCategory[_category],
-        country: countryCodes[_country],
-        language: _language,
-        excludedomain: _excludedomain,
-        page: _newsResponse!.nextPage,
-      );
-      NewsResponse n = NewsResponse.copy(newsNext);
-      _newsRaw!.news!.addAll(n.news!);
-      _newsRaw!.nextPage = n.nextPage;
+  Future<void> getNewsNextPage() async {
+    if (!_fillData) {
+      try {
+        if (!_isNewsEnd) {
+          setState(() {
+            _errorMessage = null;
+            _fillData = true;
+          });
+          var newsNext = await ApiAction.apiAction.getNews(country: country[_country]!, category: category[_category]!, date: _date, offset: _newsResponse!.news!.length);
 
-      for (var i = 0; i < newsNext.news!.length; i++) {
-        newsNext.news![i].title = await ApiAction.apiAction.translateText(taget: newsNext.news![i].title!, to: "th");
-        if (newsNext.news![i].description != null) {
-          newsNext.news![i].description = await ApiAction.apiAction.translateText(taget: newsNext.news![i].description!, to: "th");
+          setState(() {
+            if (newsNext.news!.isEmpty) {
+              _isNewsEnd = true;
+            } else {
+              _newsResponse!.news!.addAll(newsNext.news!);
+            }
+
+            _fillData = false;
+          });
         }
+      } catch (e) {
+        _errorMessage = e.toString();
       }
-
-      _newTranslate!.news!.addAll(newsNext.news!);
-      _newTranslate!.nextPage = newsNext.nextPage;
-
-      swapNews();
-      setState(() {
-        _fillData = false;
-      });
-    } catch (e) {
-      _errorMessage = e.toString();
-    }
-  }
-
-  Future<void> getTranslate() async {
-    try {
-      setState(() {
-        _errorMessage = null;
-      });
-      _newTranslate = NewsResponse.copy(_newsRaw!);
-      for (var i = 0; i < _newsResponse!.news!.length; i++) {
-        _newTranslate!.news![i].title = await ApiAction.apiAction.translateText(taget: _newTranslate!.news![i].title!, to: "th");
-        if (_newTranslate!.news![i].description != null) {
-          _newTranslate!.news![i].description = await ApiAction.apiAction.translateText(taget: _newTranslate!.news![i].description!, to: "th");
-        }
-      }
-      swapNews();
-    } catch (e) {
-      _errorMessage = e.toString();
-    }
-  }
-
-  void swapNews() {
-    if (_isTranslate) {
-      setState(() {
-        _newsResponse = _newTranslate;
-      });
-    } else {
-      setState(() {
-        _newsResponse = _newsRaw!;
-      });
     }
   }
 
@@ -375,9 +103,9 @@ class _WorldPageState extends State<WorldPage> {
                 itemCount: _newsResponse!.news!.length,
                 itemBuilder: (context, index) {
                   Image? image;
-                  if (_newsResponse!.news![index].image_url != null) {
+                  if (_newsResponse!.news![index].imgUrl != null) {
                     image = Image.network(
-                      _newsResponse!.news![index].image_url!,
+                      _newsResponse!.news![index].imgUrl!,
                       errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                       width: 150,
                     );
@@ -387,7 +115,7 @@ class _WorldPageState extends State<WorldPage> {
                   return ListTile(
                     leading: image,
                     title: Text(
-                      _newsResponse!.news![index].title!,
+                      (_isTranslate) ? _newsResponse!.news![index].titleTh! : _newsResponse!.news![index].title!,
                       softWrap: true,
                     ),
                     subtitle: Column(
@@ -395,22 +123,22 @@ class _WorldPageState extends State<WorldPage> {
                       children: [
                         if (_newsResponse!.news![index].description != null)
                           Text(
-                            _newsResponse!.news![index].description!,
+                            (_isTranslate) ? _newsResponse!.news![index].descriptionTh! : _newsResponse!.news![index].description!,
                             softWrap: true,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                         Text(DateFormat.yMMMEd().format(DateTime.parse(_newsResponse!.news![index].pubDate!))),
-                        if (_newsResponse!.news![index].factCheckResponse!.claims!.isEmpty)
+                        if (_newsResponse!.news![index].factCheck!.claims!.isEmpty)
                           Container(
                             color: Colors.amber,
                             child: const Text("ไม่พบการตรวจสอบ"),
                           )
                         else
-                          Text("พบการตรวจสอบทั้งหมด : ${_newsResponse!.news![index].factCheckResponse!.claims!.length} รายการ"),
+                          Text("พบการตรวจสอบทั้งหมด : ${_newsResponse!.news![index].factCheck!.claims!.length} รายการ"),
                       ],
                     ),
-                    onTap: () => Navigator.pushNamed(context, ReadNewPage.routeName, arguments: _newsRaw!.news![index]),
+                    onTap: () => Navigator.pushNamed(context, ReadNewPage.routeName, arguments: _newsResponse!.news![index]),
                   );
                 },
                 controller: _scrollController,
@@ -454,8 +182,10 @@ class _WorldPageState extends State<WorldPage> {
                       Checkbox(
                         value: _isTranslate,
                         onChanged: (value) {
-                          _isTranslate = value!;
-                          swapNews();
+                          setState(() {
+                            _isTranslate = value!;
+                          });
+                          //
                         },
                       ),
                       const Padding(
@@ -473,9 +203,9 @@ class _WorldPageState extends State<WorldPage> {
                             setState(() {
                               _category = newValue!;
                             });
-                            getNewsFromNewsData();
+                            getNews();
                           },
-                          items: mapCategory.keys.toList().map<DropdownMenuItem<String>>((String category) {
+                          items: category.keys.toList().map<DropdownMenuItem<String>>((String category) {
                             return DropdownMenuItem<String>(
                               value: category,
                               child: Text(
@@ -484,6 +214,19 @@ class _WorldPageState extends State<WorldPage> {
                             );
                           }).toList(),
                           value: _category,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _isLast = !_isLast;
+                            _date = (_isLast) ? 'last' : 'old';
+                            getNews();
+                          });
+                        },
+                        icon: Icon(
+                          Icons.filter_alt,
+                          color: (!_isLast) ? Colors.red : Colors.grey,
                         ),
                       ),
                     ],
@@ -501,9 +244,9 @@ class _WorldPageState extends State<WorldPage> {
                             setState(() {
                               _country = newValue!;
                             });
-                            getNewsFromNewsData();
+                            getNews();
                           },
-                          items: countryCodes.keys.toList().map<DropdownMenuItem<String>>((String country) {
+                          items: country.keys.toList().map<DropdownMenuItem<String>>((String country) {
                             return DropdownMenuItem<String>(
                               value: country,
                               child: Text(

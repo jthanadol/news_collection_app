@@ -49,7 +49,7 @@ class _FactCheckPageState extends State<FactCheckPage> {
         _errorMessage = null;
       });
 
-      _factCheckResponse = await ApiAction.apiAction.getFactCheckApi(reviewPublisherSiteFilter: "factcheckthailand.afp.com");
+      // _factCheckResponse = await ApiAction.apiAction.getFactCheckApi(reviewPublisherSiteFilter: "factcheckthailand.afp.com");
 
       setState(() {
         _isLoading = false;
@@ -66,15 +66,15 @@ class _FactCheckPageState extends State<FactCheckPage> {
         _fillData = true;
       });
 
-      var factCheckNext = await ApiAction.apiAction.getFactCheckApi(
-        reviewPublisherSiteFilter: "factcheckthailand.afp.com",
-        pageToken: _factCheckResponse!.nextPageToken,
-      );
+      // var factCheckNext = await ApiAction.apiAction.getFactCheckApi(
+      //   reviewPublisherSiteFilter: "factcheckthailand.afp.com",
+      //   pageToken: _factCheckResponse!.nextPageToken,
+      // );
 
       setState(() {
-        _factCheckResponse!.claims!.addAll(factCheckNext.claims!);
-        _factCheckResponse!.nextPageToken = factCheckNext.nextPageToken;
-        _fillData = false;
+        // _factCheckResponse!.claims!.addAll(factCheckNext.claims!);
+        // _factCheckResponse!.nextPageToken = factCheckNext.nextPageToken;
+        // _fillData = false;
       });
     } catch (e) {
       _errorMessage = e.toString();

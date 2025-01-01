@@ -2,96 +2,74 @@ import 'fact_check_tools_response.dart';
 
 class NewsResponse {
   List<News>? news;
-  String? nextPage;
 
   NewsResponse({
     required this.news,
-    this.nextPage,
   });
 
-  NewsResponse.copy(NewsResponse taget) {
-    news = taget.news!.map((n) => News.copy(n)).toList();
+  factory NewsResponse.fromJson(Map<String, dynamic> json) {
+    List<News> n = [];
+    for (var item in json['results']) {
+      n.add(News.fromJson(item));
+    }
+    return NewsResponse(news: n);
   }
 
-  factory NewsResponse.fromJsonNewsData(Map<String, dynamic> json) {
-    if (json['results'] != null) {
-      List<News> n = [];
-      for (var item in json['results']) {
-        n.add(News.fromNewsData(item));
-      }
-      return NewsResponse(news: n, nextPage: json['nextPage']);
-    } else {
-      return NewsResponse(news: []);
-    }
-  }
-
-  factory NewsResponse.fromJsonBingNewsSearch(Map<String, dynamic> json) {
-    if (json['value'] != null) {
-      List<News> n = [];
-      for (var item in json['value']) {
-        n.add(News.fromBingNewsSearch(item));
-      }
-      return NewsResponse(news: n);
-    } else {
-      return NewsResponse(news: []);
-    }
+  Map<String, dynamic> toJson() {
+    return {'results': news?.map((e) => e.toJson()).toList()};
   }
 }
 
 class News {
+  int? newId;
   String? title;
-  String? linkNews;
   String? description;
-  List<String>? content = [];
+  String? imgUrl;
+  String? newUrl;
   String? pubDate;
-  String? image_url;
-  String? source_id;
-  String? source_icon;
-  FactCheckResponse? factCheckResponse;
+  String? sourceName;
+  String? sourceIcon;
+  String? titleTh;
+  String? descriptionTh;
+  FactCheckResponse? factCheck;
+  FactCheckResponse? factCheckTh;
+  String? content = null;
+  String? contentTh = null;
 
-  News({
-    required this.title,
-    required this.linkNews,
-    required this.description,
-    required this.pubDate,
-    required this.image_url,
-    required this.source_id,
-    required this.source_icon,
-  });
+  News({this.newId, this.title, this.description, this.imgUrl, this.newUrl, this.pubDate, this.sourceName, this.sourceIcon, this.titleTh, this.descriptionTh, this.factCheck, this.factCheckTh});
 
-  News.copy(News taget) {
-    title = taget.title;
-    linkNews = taget.linkNews;
-    description = taget.description;
-    content!.addAll(taget.content!);
-    pubDate = taget.pubDate;
-    image_url = taget.image_url;
-    source_icon = taget.source_icon;
-    source_id = taget.source_id;
-    factCheckResponse = FactCheckResponse.copy(taget.factCheckResponse!);
+  factory News.fromJson(Map<String, dynamic> json) {
+    return News(
+        newId: json['new_id'],
+        title: json['title'],
+        description: json['description'],
+        imgUrl: json['img_url'],
+        newUrl: json['new_url'],
+        pubDate: json['pub_date'],
+        sourceName: json['source_name'],
+        sourceIcon: json['source_icon'],
+        titleTh: json['title_th'],
+        descriptionTh: json['description_th'],
+        factCheck: FactCheckResponse.fromJson(json['fact_check']),
+        factCheckTh: FactCheckResponse.fromJson(json['fact_check_th']));
   }
 
-  factory News.fromNewsData(Map<String, dynamic> json) {
-    return News(
-      title: json['title'],
-      linkNews: json['link'],
-      description: json['description'],
-      pubDate: json['pubDate'],
-      image_url: json['image_url'],
-      source_id: json['source_id'],
-      source_icon: json['source_icon'],
-    );
-  }
-
-  factory News.fromBingNewsSearch(Map<String, dynamic> json) {
-    return News(
-      title: json['name'],
-      linkNews: json['url'],
-      description: json['description'],
-      pubDate: json['datePublished'],
-      image_url: json['image'] != null ? json['image']['contentUrl'] : null,
-      source_id: json['provider'] != null ? json['provider'][0]['name'] : null,
-      source_icon: json['provider'] != null ? (json['provider'][0]['image'] != null ? json['provider'][0]['image']['thumbnail']['contentUrl'] : null) : null,
-    );
+  Map<String, dynamic> toJson() {
+    return {
+      'new_id': newId,
+      'title': title,
+      'description': description,
+      'img_url': imgUrl,
+      'new_url': newUrl,
+      'pub_date': pubDate,
+      'source_name': sourceName,
+      'source_icon': sourceIcon,
+      'title_th': titleTh,
+      'description_th': descriptionTh,
+      'fact_check': factCheck?.toJson(),
+      'fact_check_th': factCheckTh?.toJson(),
+      'content': content,
+      'content_th': contentTh,
+    };
   }
 }

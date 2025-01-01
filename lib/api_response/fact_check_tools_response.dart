@@ -4,12 +4,8 @@ class FactCheckResponse {
 
   FactCheckResponse({required this.claims, required this.nextPageToken});
 
-  FactCheckResponse.copy(FactCheckResponse taget) {
-    claims = taget.claims!.map((claim) => Claim.copy(claim)).toList();
-  }
-
-  factory FactCheckResponse.fromJson(Map<String, dynamic> json) {
-    if (json.isEmpty) {
+  factory FactCheckResponse.fromJson(Map<String, dynamic>? json) {
+    if (json == null) {
       return FactCheckResponse(claims: [], nextPageToken: null);
     } else {
       List<Claim> c = [];
@@ -22,6 +18,13 @@ class FactCheckResponse {
         nextPageToken: json['nextPageToken'],
       );
     }
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'claims': claims?.map((i) => {i.toJson()}).toList(),
+      'nextPageToken': nextPageToken
+    };
   }
 }
 
@@ -38,13 +41,6 @@ class Claim {
     required this.claimReview,
   });
 
-  Claim.copy(Claim taget) {
-    text = taget.text;
-    claimant = taget.claimant;
-    claimDate = taget.claimDate;
-    claimReview = taget.claimReview!.map((c) => ClaimReview.copy(c)).toList();
-  }
-
   factory Claim.fromJson(Map<String, dynamic> json) {
     List<ClaimReview> c = [];
     for (var item in json['claimReview']) {
@@ -57,6 +53,10 @@ class Claim {
       claimDate: json['claimDate'],
       claimReview: c,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'text': text, 'claimant': claimant, 'claimDate': claimDate, 'claimReview': claimReview?.map((i) => i.toJson()).toList()};
   }
 }
 
@@ -77,15 +77,6 @@ class ClaimReview {
     required this.languageCode,
   });
 
-  ClaimReview.copy(ClaimReview taget) {
-    publisher = Publisher.copy(taget.publisher!);
-    url = taget.url;
-    title = taget.title;
-    reviewDate = taget.reviewDate;
-    textualRating = taget.textualRating;
-    languageCode = taget.languageCode;
-  }
-
   factory ClaimReview.fromJson(Map<String, dynamic> json) {
     return ClaimReview(
       publisher: Publisher.fromJson(json['publisher']),
@@ -95,6 +86,10 @@ class ClaimReview {
       textualRating: json['textualRating'],
       languageCode: json['languageCode'],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'publisher': publisher?.toJson(), 'url': url, 'title': title, 'reviewDate': reviewDate, 'textualRating': textualRating, 'languageCode': languageCode};
   }
 }
 
@@ -107,15 +102,14 @@ class Publisher {
     required this.site,
   });
 
-  Publisher.copy(Publisher taget) {
-    name = taget.name;
-    site = taget.site;
-  }
-
   factory Publisher.fromJson(Map<String, dynamic> json) {
     return Publisher(
       name: json['name'],
       site: json['site'],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'name': name, 'site': site};
   }
 }

@@ -1,11 +1,10 @@
-// ignore_for_file: sort_child_properties_last, curly_braces_in_flow_control_structures
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:news_app/api_response/api_action.dart';
 import 'package:news_app/api_response/news_response.dart';
 import 'package:news_app/app_page/read_new_page.dart';
 import 'package:news_app/app_page/search_new_page.dart';
+import 'package:news_app/config.dart';
 
 class HomePage extends StatefulWidget {
   static const routeName = "/home_page"; //ชื่อที่ใช้อ้างถึงหน้านี้
@@ -20,36 +19,20 @@ class _HomePageState extends State<HomePage> {
   NewsResponse? _newsResponse;
   bool _isLoading = false;
   bool _fillData = false;
+  bool _isNewsEnd = false; //ข้อมูลที่ขอกับ server หมดหรือยังถ้ายังเป็น false
   String? _errorMessage;
+  bool _isLast = true; //true เรียงข่าวจากล่าสุด
   final ScrollController _scrollController = ScrollController();
 
   String _country = "th";
-  String _language = 'th';
   String _category = 'ธุรกิจ';
-  Map<String, String> mapCategory = {
-    'ธุรกิจ': 'business',
-    'อาชญากรรม': 'crime',
-    'ภายในประเทศ': 'domestic',
-    'การศึกษา': 'education',
-    'บันเทิง': 'entertainment',
-    'สิ่งแวดล้อม': 'environment',
-    'อาหาร': 'food',
-    'สุขภาพ': 'health',
-    'ไลฟ์สไตล์': 'lifestyle',
-    'อื่นๆ': 'other',
-    'การเมือง': 'politics',
-    'วิทยาศาสตร์': 'science',
-    'กีฬา': 'sports',
-    'เทคโนโลยี': 'technology',
-    'ยอดนิยม': 'top',
-    'การท่องเที่ยว': 'tourism',
-    'โลก': 'world',
-  };
+  String _date = 'last';
+  final category = Config.config.category;
 
   @override
   void initState() {
     super.initState();
-    getNewsFromNewsData();
+    getNews();
     _scrollController.addListener(_onScroll);
   }
 
@@ -61,22 +44,18 @@ class _HomePageState extends State<HomePage> {
 
   void _onScroll() {
     if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
-      getNewsFromNewsDataNextPage();
+      getNewsNextPage();
     }
   }
 
-  Future<void> getNewsFromNewsData() async {
+  Future<void> getNews() async {
     try {
       setState(() {
         _isLoading = true;
         _errorMessage = null;
       });
 
-      _newsResponse = await ApiAction.apiAction.getNewsDataApi(
-        category: mapCategory[_category],
-        country: _country,
-        language: _language,
-      );
+      _newsResponse = await ApiAction.apiAction.getNews(country: _country, category: category[_category]!, date: _date);
 
       setState(() {
         _isLoading = false;
@@ -86,26 +65,29 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> getNewsFromNewsDataNextPage() async {
-    try {
-      setState(() {
-        _errorMessage = null;
-        _fillData = true;
-      });
-      var newsNext = await ApiAction.apiAction.getNewsDataApi(
-        category: mapCategory[_category],
-        country: _country,
-        language: _language,
-        page: _newsResponse!.nextPage,
-      );
+  Future<void> getNewsNextPage() async {
+    if (!_fillData) {
+      try {
+        if (!_isNewsEnd) {
+          setState(() {
+            _errorMessage = null;
+            _fillData = true;
+          });
+          var newsNext = await ApiAction.apiAction.getNews(country: _country, category: category[_category]!, date: _date, offset: _newsResponse!.news!.length);
 
-      setState(() {
-        _newsResponse!.news!.addAll(newsNext.news!);
-        _newsResponse!.nextPage = newsNext.nextPage;
-        _fillData = false;
-      });
-    } catch (e) {
-      _errorMessage = e.toString();
+          setState(() {
+            if (newsNext.news!.isEmpty) {
+              _isNewsEnd = true;
+            } else {
+              _newsResponse!.news!.addAll(newsNext.news!);
+            }
+
+            _fillData = false;
+          });
+        }
+      } catch (e) {
+        _errorMessage = e.toString();
+      }
     }
   }
 
@@ -118,9 +100,9 @@ class _HomePageState extends State<HomePage> {
                 itemCount: _newsResponse!.news!.length,
                 itemBuilder: (context, index) {
                   Image? image;
-                  if (_newsResponse!.news![index].image_url != null) {
+                  if (_newsResponse!.news![index].imgUrl != null) {
                     image = Image.network(
-                      _newsResponse!.news![index].image_url!,
+                      _newsResponse!.news![index].imgUrl!,
                       errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                       width: 150,
                     );
@@ -130,27 +112,27 @@ class _HomePageState extends State<HomePage> {
                   return ListTile(
                     leading: image,
                     title: Text(
-                      _newsResponse!.news![index].title!,
+                      _newsResponse!.news![index].titleTh!,
                       softWrap: true,
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (_newsResponse!.news![index].description != null)
+                        if (_newsResponse!.news![index].descriptionTh != null)
                           Text(
-                            _newsResponse!.news![index].description!,
+                            _newsResponse!.news![index].descriptionTh!,
                             softWrap: true,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                         Text(DateFormat.yMMMEd().format(DateTime.parse(_newsResponse!.news![index].pubDate!))),
-                        if (_newsResponse!.news![index].factCheckResponse!.claims!.isEmpty)
+                        if (_newsResponse!.news![index].factCheck!.claims!.isEmpty)
                           Container(
-                            child: const Text("ไม่พบการตรวจสอบ"),
                             color: Colors.amber,
+                            child: const Text("ไม่พบการตรวจสอบ"),
                           )
                         else
-                          Text("พบการตรวจสอบทั้งหมด : ${_newsResponse!.news![index].factCheckResponse!.claims!.length} รายการ"),
+                          Text("พบการตรวจสอบทั้งหมด : ${_newsResponse!.news![index].factCheck!.claims!.length} รายการ"),
                       ],
                     ),
                     onTap: () => Navigator.pushNamed(context, ReadNewPage.routeName, arguments: _newsResponse!.news![index]),
@@ -200,15 +182,28 @@ class _HomePageState extends State<HomePage> {
                     setState(() {
                       _category = newValue!;
                     });
-                    getNewsFromNewsData();
+                    getNews();
                   },
-                  items: mapCategory.keys.toList().map<DropdownMenuItem<String>>((String category) {
+                  items: category.keys.toList().map<DropdownMenuItem<String>>((String category) {
                     return DropdownMenuItem<String>(
                       value: category,
                       child: Text(category),
                     );
                   }).toList(),
                   value: _category,
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _isLast = !_isLast;
+                    _date = (_isLast) ? 'last' : 'old';
+                    getNews();
+                  });
+                },
+                icon: Icon(
+                  Icons.filter_alt,
+                  color: (!_isLast) ? Colors.red : Colors.grey,
                 ),
               ),
             ],
