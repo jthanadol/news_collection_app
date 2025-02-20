@@ -64,7 +64,7 @@ class ClaimReview {
   Publisher? publisher;
   String? url;
   String? title;
-  String? reviewDate;
+  String? reviewDate = null;
   String? textualRating;
   String? languageCode;
 

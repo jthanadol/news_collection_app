@@ -1,8 +1,4 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart';
-import 'package:news_app/api_response/api_action.dart';
 
 class MorePage extends StatefulWidget {
   static const routeName = "/more_page"; //ชื่อที่ใช้อ้างถึงหน้านี้
@@ -25,13 +21,96 @@ class _MorePageState extends State<MorePage> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text("More"),
+        title: const Text("More"),
         backgroundColor: Colors.black12,
         centerTitle: true,
-        actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.search))],
       ),
-      body: const Center(
-        child: Text("This Body"),
+      body: Column(
+        children: [
+          const SizedBox(
+            height: 36,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(color: Colors.black12),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [Icon(Icons.download), Text('ข่าวที่ดาวน์โหลด')],
+                  ),
+                  Icon(Icons.arrow_drop_down)
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(color: Colors.black12),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [Icon(Icons.text_fields), Text('ตั้งค่าตัวอักษร')],
+                  ),
+                  Icon(Icons.arrow_drop_down)
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(color: Colors.black12),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [Icon(Icons.format_color_fill), Text('ตั้งค่าธีมสี')],
+                  ),
+                  Icon(Icons.arrow_drop_down)
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(color: Colors.black12),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [Icon(Icons.settings), Text('ตั้งค่าเพิ่มเติม')],
+                  ),
+                  Icon(Icons.arrow_drop_down)
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(color: Colors.black12),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [Icon(Icons.question_mark), Text('เกี่ยวกับแอปพลิเคชัน')],
+                  ),
+                  Icon(Icons.arrow_drop_down)
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

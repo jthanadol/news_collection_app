@@ -1,8 +1,16 @@
-class Config {
-  static final config = Config();
+class ServerConfig {
+  static final serverConfig = ServerConfig();
   final urlServer = "http://192.168.0.249:3000"; //domainname server
   final endPointNews = "/news?"; //endpoint ของการขอข้อมูลข่าว
   final endPointSearch = "/search?"; //endpoint ของการค้นหาข่าว
+  final endPointFactCheck = "/factcheck?"; //endpoint ของการค้นการตัวสอบข้อเท็จจริง
+  final endPointContent = "/content?"; //endpoint ขอเนื้อหาข่าว
+  final endPointAudio = '/audio?'; //endpoint ขอรายการไฟล์เสียง
+  final endPointLogin = '/login'; //endpoint เข้าสู่ระบบ
+  final endPointRegister = '/register'; //endpoint สมัครสมาชิก
+  final endPointOTP = '/otp'; //endpoint ขอ OTP
+  final endPointForgot = '/forgot'; // endpoint เปลี่ยนรหัสผ่าน
+  final endPointGoogleLogin = '/googleLogin'; //endpoint เข้าสู่ระบบด้วย google
 
   final category = {
     'ธุรกิจ': 'business',
@@ -232,5 +240,5 @@ class Config {
     'ซิมบับเว': 'zw',
   };
 
-  Config();
+  ServerConfig();
 }

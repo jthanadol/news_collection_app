@@ -1,7 +1,8 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:news_app/config.dart';
+import 'package:news_app/api_response/fact_check_tools_response.dart';
+import 'package:news_app/config/server_config.dart';
 import 'news_response.dart';
 
 class ApiAction {
@@ -11,7 +12,7 @@ class ApiAction {
   //parameter มี country เช่น 'th' , category เช่น food , date เช่น old(เรียงเก่าไปใหม่) , offset ข้ามข่าว เช่น 10 คือ ข้ามไปทำเอาอันที่ 11 เป็นต้นไป
   Future<NewsResponse> getNews({required String country, required String category, required String date, int offset = 0}) async {
     try {
-      String url = '${Config.config.urlServer + Config.config.endPointNews}country=$country&category=$category&date=$date&offset=$offset';
+      String url = '${ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointNews}country=$country&category=$category&date=$date&offset=$offset';
       var response = await http.get(Uri.parse(url));
       print("Method getNews : $url");
       if (response.statusCode == 200) {
@@ -29,7 +30,7 @@ class ApiAction {
 
   //parameter text ใน body คือ คำค้น || since เวลาของข่าวเช่น ตั้งแต่ 2024-1-1 จน ปัจจุบัน, offset ข้ามข่าว เช่น 10 คือ ข้ามไปทำเอาอันที่ 11 เป็นต้นไป
   Future<NewsResponse> searchNews({required String text, String? since, int offset = 0}) async {
-    String url = "${Config.config.urlServer + Config.config.endPointSearch}offset=$offset";
+    String url = "${ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointSearch}offset=$offset";
     if (since != null) {
       url += "&since=$since";
     }
@@ -53,85 +54,180 @@ class ApiAction {
     }
   }
 
-  /* Future<String> getVaja9Api({
-    required String input_text, //ข้อความที่ต้องการสังเคราะห์เสียง (สูงสุดไม่เกิน 300 ตัวอักษร)
-    int speaker = 0, //ประเภทของเสียงที่ต้องการ | 0 : เสียงผู้ชาย | 1 : เสียงผู้หญิง | 2 : เสียงเด็กผู้ชาย | 3 : เสียงเด็กผู้หญิง
-    int phrase_break = 0, //ประเภทของการหยุดเว้นวรรค | 0 : หยุดเว้นวรรคแบบอัตโนมัติ | 1 : ไม่หยุดเว้นวรรค
-    int audiovisual = 0, //ประเภทของโมเดล | 0 : โมเดลสังเคราะห์เสียง | 1 : โมเดลสังเคราะห์เสียง และภาพ
-  }) async {
-    //print(input_text);
-    var response = await http.post(
-      Uri.parse("https://api.aiforthai.in.th/vaja9/synth_audiovisual"),
-      headers: {"Apikey": aiForThaiApiKey, "Content-Type": "application/json"},
-      body: json.encode({"input_text": input_text, "speaker": speaker, "phrase_break": phrase_break, "audiovisual": audiovisual}),
-    );
-    var data = json.decode(response.body);
-
-    for (;;) {
-      if (data["message"] == null) {
-        break;
-      }
-      response = await http.post(
-        Uri.parse("https://api.aiforthai.in.th/vaja9/synth_audiovisual"),
-        headers: {"Apikey": aiForThaiApiKey, "Content-Type": "application/json"},
-        body: json.encode({"input_text": input_text, "speaker": speaker, "phrase_break": phrase_break, "audiovisual": audiovisual}),
-      );
-      data = json.decode(response.body);
+  Future<List<FactCheckResponse>> searchFactCheck({required String query, String? nextPage}) async {
+    if (query.contains("&")) {
+      query = query.replaceAll("&", " and ");
     }
-    String wavUrl = data['wav_url'];
-    await Future.delayed(const Duration(seconds: 1)); //หยุด 1 วิเพื่อไม่ให้เกิน rate limit
-    //print(wavUrl);
-    Directory directory = await getTemporaryDirectory();
-    String saveFile = wavUrl.substring(wavUrl.lastIndexOf('/'));
-    saveFile = "${directory.path}/audio$saveFile";
-    print(saveFile);
-    Options options = Options(headers: {"Apikey": aiForThaiApiKey});
-    await _dio.download(wavUrl, saveFile, options: options);
-    print("โหลดเสร็จเสร็จ");
-    _dio.interceptors.clear();
-    return saveFile;
-
-    int textLimit = 150; //จำนวนตัวอักษรสูงสุดที่ vaja9 api รับได้
-    List<String> content = _newsTranslate!.content!;
-    List<String> word = []; //คำในข้อความ
-    String textContent = "";
-    for (var i = 0; i < content.length; i++) {
-      textContent = content[i].replaceAll("%", " เปอร์เซ็น");
-      textContent = textContent.replaceAll("\"", "");
-      textContent = textContent.replaceAll("'", "");
-      textContent.trim();
-      if (!validators.isURL(textContent) && textContent.isNotEmpty) {
-        if (textContent.length > textLimit) {
-          int sumLength = 0; //จำนวนตัวอักษรที่ถูกแปลงเป็นเสียงแล้ว
-          String text = ""; //ข้อความที่จะแปลงเสียง
-          int indexOfLastWord = 0; //ตำแหน่งคำสุดท้าย
-          for (var j = 0; j < (textContent.length / textLimit).ceil(); j++) {
-            if ((sumLength + textLimit) > textContent.length) {
-              text = textContent.substring(sumLength, textContent.length);
-              text.trim();
-              if (text.isNotEmpty) {
-                playList.add(await ApiAction.apiAction.getVaja9Api(input_text: text));
-                sumLength = textContent.length;
-                print(text);
-              }
-            } else {
-              word = await ApiAction.apiAction.separateWord(text: textContent.substring(sumLength, sumLength + textLimit));
-              indexOfLastWord = textContent.indexOf(word[word.length - 2], sumLength); //-2 เพื่อเอาคำก่อนตัวสุดท้าย
-              text = textContent.substring(sumLength, indexOfLastWord);
-              text.trim();
-              if (text.isNotEmpty) {
-                playList.add(await ApiAction.apiAction.getVaja9Api(input_text: text)); //ดาวน์โหลดไฟล์เสียงและเก็บที่อยู่ลง playList
-                sumLength += text.length;
-                Future.delayed(const Duration(seconds: 1)); //หยุด 1 วิ เพื่อไม่ให้เกิน Rate limit ของ Vaja9
-                print(text);
-              }
-            }
-          }
-        } else {
-          playList.add(await ApiAction.apiAction.getVaja9Api(input_text: textContent));
-          print(textContent);
-        }
-        Future.delayed(const Duration(seconds: 1)); //หยุด 1 วิ เพื่อไม่ให้เกิน Rate limit ของ Vaja9
+    String url = "${ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointFactCheck}query=$query";
+    if (nextPage != null) {
+      url += "&nextPage=$nextPage";
+      print("Fact Check : " + url);
+    }
+    try {
+      var response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        var data = json.decode(response.body);
+        List<FactCheckResponse> factCheck = [];
+        factCheck.add(FactCheckResponse.fromJson(data['fact_check']));
+        factCheck.add(FactCheckResponse.fromJson(data['fact_check_th']));
+        return factCheck;
+      } else {
+        print("Fact Check ERROR");
+        List<FactCheckResponse> factCheck = [];
+        factCheck.add(FactCheckResponse.fromJson(null));
+        factCheck.add(FactCheckResponse.fromJson(null));
+        return factCheck;
       }
-  } */
+    } catch (e) {
+      print("Fact Check ERROR : $e");
+      List<FactCheckResponse> factCheck = [];
+      factCheck.add(FactCheckResponse.fromJson(null));
+      factCheck.add(FactCheckResponse.fromJson(null));
+      return factCheck;
+    }
+  }
+
+  Future<List<String>> getContent({required int id}) async {
+    String url = "${ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointContent}id=$id";
+    try {
+      var response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        var data = json.decode(response.body);
+        print(data["data"]["content"]);
+        return [data["data"]["content"], data["data"]["content_th"]];
+      } else {
+        return [];
+      }
+    } catch (e) {
+      print("getContent ERROR : $e");
+      return [];
+    }
+  }
+
+  Future getAudio({required int id}) async {
+    String url = "${ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointAudio}id=$id";
+    try {
+      var response = await http.get(Uri.parse(url));
+      var data = json.decode(response.body);
+      List<String> urlAudioTh = [];
+      List<String> urlAudioEn = [];
+      if (response.statusCode == 200) {
+        if (data['msg'] == 'ส่งรายชื่อไฟล์สำเร็จ') {
+          for (var i = 0; i < data['fileTH'].length; i++) {
+            urlAudioTh.add(ServerConfig.serverConfig.urlServer + data['path'].substring(1) + '/th/' + data['fileTH'][i]);
+          }
+          for (var i = 0; i < data['fileEN'].length; i++) {
+            urlAudioEn.add(ServerConfig.serverConfig.urlServer + data['path'].substring(1) + '/en/' + data['fileEN'][i]);
+          }
+        }
+        return [data['msg'], urlAudioTh, urlAudioEn];
+      } else {
+        return [data['msg'], [], []];
+      }
+    } catch (e) {
+      print('getAudio Error ' + e.toString());
+      return ['error', [], []];
+    }
+  }
+
+  bool checkFact(String text) {
+    bool fact = false;
+    //ถ้าไม่มีคำว่าไม่
+    if (!text.contains("ไม่")) {
+      if (text.contains("จริง")) {
+        fact = true;
+        if (text.contains("จริงบางส่วน")) {
+          fact = false;
+        }
+      } else if (text.contains("เชื่อถือ")) {
+        fact = true;
+      } else if (text.contains("ถูก")) {
+        //ถูกต้อง
+        fact = true;
+      } else if (text.contains("ยืนยัน")) {
+        //ยื่นยันแล้ว
+        fact = true;
+      } else if (text.contains("รองรับ")) {
+        // รับรอง มาจาก Supported
+        fact = true;
+      } else if (text.contains("ตรวจสอบแล้ว")) {
+        //ตรวจสอบแล้ว มาจาก Verified
+        fact = true;
+      } else if (text.contains("แท้")) {
+        fact = true;
+      } else if (text.contains("พิสูจน์แล้ว")) {
+        fact = true;
+      }
+    } else {
+      //Not Unusual แปลได้เป็น ไม่ผิดปกติ
+      if (text.contains("ไม่ผิดปกติ")) {
+        fact = true;
+      }
+    }
+    return fact;
+  }
+
+  Future<List> login({required String email, required String password}) async {
+    String url = ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointLogin;
+    var response = await http.post(
+      Uri.parse(url),
+      body: json.encode({"email": email, "password": password}),
+      headers: {"Content-type": "application/json"},
+    );
+
+    var data = json.decode(response.body);
+    return [data['msg'], (response.statusCode == 200) ? data['accountId'] : -1];
+  }
+
+  Future<List> register({required String email, required String password}) async {
+    String url = ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointRegister;
+    var response = await http.post(
+      Uri.parse(url),
+      body: json.encode({"email": email, "password": password}),
+      headers: {"Content-type": "application/json"},
+    );
+
+    var data = json.decode(response.body);
+    return [data['msg'], response.statusCode == 200];
+  }
+
+  Future<List> getOTP({required String email}) async {
+    String url = ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointOTP;
+    var response = await http.post(
+      Uri.parse(url),
+      body: json.encode({"email": email}),
+      headers: {"Content-type": "application/json"},
+    );
+
+    var data = json.decode(response.body);
+    return [data['msg'], response.statusCode == 200];
+  }
+
+  getForgot({required String email, required String otp, required String password}) async {
+    String url = ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointForgot;
+    var response = await http.put(
+      Uri.parse(url),
+      body: json.encode({
+        "email": email,
+        "password": password,
+        "otp": otp,
+      }),
+      headers: {"Content-type": "application/json"},
+    );
+
+    var data = json.decode(response.body);
+    return [data['msg'], response.statusCode == 200];
+  }
+
+  Future<List> googleLogin({required String email, required String googleId}) async {
+    String url = ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointGoogleLogin;
+    var response = await http.post(
+      Uri.parse(url),
+      body: json.encode({"email": email, "googleId": googleId}),
+      headers: {"Content-type": "application/json"},
+    );
+
+    var data = json.decode(response.body);
+    return [data['msg'], (response.statusCode == 200) ? data['accountId'] : -1];
+  }
 }

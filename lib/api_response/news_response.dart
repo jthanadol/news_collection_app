@@ -35,6 +35,8 @@ class News {
   FactCheckResponse? factCheckTh;
   String? content = null;
   String? contentTh = null;
+  List<String> audioTh = [];
+  List<String> audioEn = [];
 
   News({this.newId, this.title, this.description, this.imgUrl, this.newUrl, this.pubDate, this.sourceName, this.sourceIcon, this.titleTh, this.descriptionTh, this.factCheck, this.factCheckTh});
 

@@ -41,6 +41,8 @@ dependencies:
   http: ^1.2.2
   path_provider: ^2.1.5
   just_audio: ^0.9.42
+  form_field_validator: ^1.1.0
+  google_sign_in: ^6.2.2
 
 
 dev_dependencies:

@@ -1,12 +1,10 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:news_app/api_response/api_action.dart';
 import 'package:news_app/api_response/news_response.dart';
 import 'package:news_app/app_page/read_new_page.dart';
 import 'package:news_app/app_page/search_new_page.dart';
-import 'package:news_app/config.dart';
+import 'package:news_app/config/server_config.dart';
 
 class WorldPage extends StatefulWidget {
   static const routeName = "/world_page"; //ชื่อที่ใช้อ้างถึงหน้านี้
@@ -29,8 +27,8 @@ class _WorldPageState extends State<WorldPage> {
   String? _country = 'สหรัฐอเมริกา';
   String _category = 'ธุรกิจ';
   String _date = 'last';
-  final category = Config.config.category;
-  final country = Config.config.country;
+  final category = ServerConfig.serverConfig.category;
+  final country = ServerConfig.serverConfig.country;
 
   @override
   void initState() {
@@ -132,10 +130,45 @@ class _WorldPageState extends State<WorldPage> {
                         if (_newsResponse!.news![index].factCheck!.claims!.isEmpty)
                           Container(
                             color: Colors.amber,
-                            child: const Text("ไม่พบการตรวจสอบ"),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.error_outline),
+                                SizedBox(width: 8),
+                                Text("ไม่พบการตรวจสอบ"),
+                              ],
+                            ),
                           )
                         else
-                          Text("พบการตรวจสอบทั้งหมด : ${_newsResponse!.news![index].factCheck!.claims!.length} รายการ"),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("พบการตรวจสอบ : ${_newsResponse!.news![index].factCheck!.claims!.length} รายการ"),
+                              Column(
+                                children: [
+                                  for (int k = 0; k < _newsResponse!.news![index].factCheck!.claims!.length; k++)
+                                    for (int j = 0; j < _newsResponse!.news![index].factCheck!.claims![k].claimReview!.length; j++)
+                                      Container(
+                                        decoration: BoxDecoration(color: (ApiAction.apiAction.checkFact(_newsResponse!.news![index].factCheckTh!.claims![k].claimReview![j].textualRating!)) ? Colors.greenAccent : Colors.redAccent),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon((ApiAction.apiAction.checkFact(_newsResponse!.news![index].factCheckTh!.claims![k].claimReview![j].textualRating!)) ? Icons.check : Icons.close),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                (_isTranslate) ? _newsResponse!.news![index].factCheckTh!.claims![k].claimReview![j].textualRating! : _newsResponse!.news![index].factCheck!.claims![k].claimReview![j].textualRating!,
+                                                overflow: TextOverflow.ellipsis,
+                                                maxLines: 1,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                ],
+                              ),
+                            ],
+                          ),
                       ],
                     ),
                     onTap: () => Navigator.pushNamed(context, ReadNewPage.routeName, arguments: _newsResponse!.news![index]),
