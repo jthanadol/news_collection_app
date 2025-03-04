@@ -21,10 +21,7 @@ class FactCheckResponse {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'claims': claims?.map((i) => {i.toJson()}).toList(),
-      'nextPageToken': nextPageToken
-    };
+    return {'claims': claims?.map((i) => i.toJson()).toList(), 'nextPageToken': nextPageToken};
   }
 }
 

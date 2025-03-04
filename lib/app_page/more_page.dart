@@ -1,4 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:news_app/app_page/about_page.dart';
+import 'package:news_app/app_page/login_page.dart';
+import 'package:news_app/app_page/offline_news.dart';
+import 'package:news_app/app_page/setting_page.dart';
+import 'package:news_app/config/auth.dart';
+import 'package:news_app/config/setting_app.dart';
 
 class MorePage extends StatefulWidget {
   static const routeName = "/more_page"; //ชื่อที่ใช้อ้างถึงหน้านี้
@@ -21,96 +28,135 @@ class _MorePageState extends State<MorePage> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text("More"),
+        title: Text(
+          "เมนูเพิ่มเติม",
+          style: TextStyle(
+            fontSize: SettingApp.settingApp.textSizeH2,
+          ),
+        ),
         backgroundColor: Colors.black12,
         centerTitle: true,
       ),
       body: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          const SizedBox(
+          SizedBox(
             height: 36,
           ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(color: Colors.black12),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              (Auth.auth.accountType == 'Email')
+                  ? Icon(Icons.email)
+                  : Image.asset(
+                      'assets/img/google_icon.png',
+                      cacheHeight: 40,
+                    ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [Icon(Icons.download), Text('ข่าวที่ดาวน์โหลด')],
+                  Text(
+                    Auth.auth.email,
+                    style: TextStyle(
+                      fontSize: SettingApp.settingApp.textSizeBody,
+                    ),
                   ),
-                  Icon(Icons.arrow_drop_down)
+                  Text(
+                    'Account ID : ${Auth.auth.accountId}',
+                    style: TextStyle(
+                      fontSize: SettingApp.settingApp.textSizeBody,
+                    ),
+                  ),
                 ],
+              ),
+            ],
+          ),
+          SizedBox(
+            height: 36,
+          ),
+          Column(
+            children: [
+              buildButtonBar(
+                context,
+                routeName: OfflineNews.routeName,
+                icon: Icons.download,
+                text: 'ข่าวที่บันทึก',
+              ),
+              SizedBox(
+                height: 16,
+              ),
+              buildButtonBar(
+                context,
+                icon: Icons.settings,
+                routeName: SettingPage.routeName,
+                text: 'การตั้งค่าแอปพลิเคชัน',
+              ),
+              SizedBox(
+                height: 16,
+              ),
+              buildButtonBar(
+                context,
+                routeName: AboutPage.routeName,
+                icon: Icons.question_mark,
+                text: 'เกี่ยวกับแอปพลิเคชัน',
+              ),
+            ],
+          ),
+          SizedBox(
+            height: 36,
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              fixedSize: Size.fromHeight(SettingApp.settingApp.buttonSize),
+            ),
+            onPressed: () {
+              Auth.auth.logout();
+              Navigator.pushReplacementNamed(context, LoginPage.routeName);
+            },
+            label: Text(
+              "ออกจากระบบ",
+              style: TextStyle(
+                fontSize: SettingApp.settingApp.textSizeButton,
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(color: Colors.black12),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [Icon(Icons.text_fields), Text('ตั้งค่าตัวอักษร')],
-                  ),
-                  Icon(Icons.arrow_drop_down)
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(color: Colors.black12),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [Icon(Icons.format_color_fill), Text('ตั้งค่าธีมสี')],
-                  ),
-                  Icon(Icons.arrow_drop_down)
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(color: Colors.black12),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [Icon(Icons.settings), Text('ตั้งค่าเพิ่มเติม')],
-                  ),
-                  Icon(Icons.arrow_drop_down)
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(color: Colors.black12),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [Icon(Icons.question_mark), Text('เกี่ยวกับแอปพลิเคชัน')],
-                  ),
-                  Icon(Icons.arrow_drop_down)
-                ],
-              ),
+            icon: Icon(
+              Icons.logout,
+              size: SettingApp.settingApp.iconSize,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  ElevatedButton buildButtonBar(BuildContext context, {required String routeName, required IconData icon, required String text}) {
+    return ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        fixedSize: Size.fromHeight(
+          SettingApp.settingApp.buttonSize,
+        ),
+      ),
+      onPressed: () {
+        Navigator.pushNamed(context, routeName);
+      },
+      label: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: SettingApp.settingApp.textSizeButton,
+            ),
+          ),
+          Icon(
+            Icons.arrow_forward,
+            size: SettingApp.settingApp.iconSize,
+          )
+        ],
+      ),
+      icon: Icon(
+        icon,
+        size: SettingApp.settingApp.iconSize,
       ),
     );
   }

@@ -5,6 +5,8 @@ import 'package:news_app/api_response/api_action.dart';
 import 'package:news_app/app_page/app_page.dart';
 import 'package:news_app/app_page/forgot_page.dart';
 import 'package:news_app/app_page/register_page.dart';
+import 'package:news_app/config/auth.dart';
+import 'package:news_app/config/setting_app.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -25,6 +27,18 @@ class _LoginPageState extends State<LoginPage> {
   bool _errLogin = false;
   String _msg = '';
 
+  void initState() {
+    super.initState();
+    checkLoginFile();
+  }
+
+  Future<void> checkLoginFile() async {
+    await Auth.auth.readLoginFile();
+    if (Auth.auth.isLogin) {
+      Navigator.pushReplacementNamed(context, AppPage.routeName);
+    }
+  }
+
   Future<void> getLogin() async {
     if (!_isLoading) {
       setState(() {
@@ -35,6 +49,8 @@ class _LoginPageState extends State<LoginPage> {
       var res = await ApiAction.apiAction.login(email: _email, password: _password);
       if (res[1] == -1) {
         _errLogin = true;
+      } else {
+        Auth.auth.login(email: _email, accountId: res[1], accountType: "Email");
       }
       _msg = res[0];
       setState(() {
@@ -52,12 +68,17 @@ class _LoginPageState extends State<LoginPage> {
           _msg = '';
         });
 
-        List<dynamic> res = await ApiAction.apiAction.googleLogin(email: _googleSignIn.currentUser!.email, googleId: _googleSignIn.currentUser!.id);
+        List<dynamic> res = await ApiAction.apiAction.googleLogin(
+          email: _googleSignIn.currentUser!.email,
+          googleId: _googleSignIn.currentUser!.id,
+        );
 
         setState(() {
           if (res[1] == -1) {
             _errLogin = true;
             _msg = res[0];
+          } else {
+            Auth.auth.login(email: _googleSignIn.currentUser!.email, accountId: res[1], accountType: "Google");
           }
         });
       }
@@ -69,26 +90,68 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Login'),
-      ),
-      body: Center(
-        child: Container(
-          padding: EdgeInsets.only(left: 16, right: 16),
+      body: Container(
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/img/background_2.jpg'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        padding: EdgeInsets.only(left: 16, right: 16),
+        child: Center(
           child: SingleChildScrollView(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Text(
+                  'เข้าสู่ระบบ',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: SettingApp.settingApp.textSizeH1,
+                    fontWeight: FontWeight.bold,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black,
+                        blurRadius: 5,
+                        offset: Offset(2, 2),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(
+                  height: 50,
+                ),
                 if (_errLogin)
                   Text(
                     _msg,
-                    style: const TextStyle(color: Colors.red),
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontSize: SettingApp.settingApp.textSizeBody,
+                    ),
                   ),
+                SizedBox(
+                  height: 16,
+                ),
                 Form(
                   key: _fromKey,
                   child: Column(
                     children: [
-                      Text('อีเมล'),
+                      Text(
+                        'อีเมล',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: SettingApp.settingApp.textSizeH3,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black,
+                              blurRadius: 5,
+                              offset: Offset(2, 2),
+                            ),
+                          ],
+                        ),
+                      ),
                       TextFormField(
                         keyboardType: TextInputType.emailAddress,
                         validator: MultiValidator([
@@ -98,14 +161,113 @@ class _LoginPageState extends State<LoginPage> {
                         onSaved: (String? em) {
                           _email = em!;
                         },
+                        decoration: InputDecoration(
+                          errorStyle: TextStyle(
+                            fontSize: SettingApp.settingApp.textSizeBody,
+                            color: Colors.red,
+                          ),
+                          prefixIcon: Icon(Icons.email),
+                          prefixIconColor: Colors.white,
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(
+                              color: Colors.white,
+                            ),
+                          ),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: SettingApp.settingApp.textSizeBody,
+                          fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black,
+                              blurRadius: 5,
+                              offset: Offset(2, 2),
+                            ),
+                          ],
+                        ),
                       ),
-                      Text('รหัสผ่าน'),
+                      SizedBox(
+                        height: 20,
+                      ),
+                      Text(
+                        'รหัสผ่าน',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: SettingApp.settingApp.textSizeH3,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black,
+                              blurRadius: 5,
+                              offset: Offset(2, 2),
+                            ),
+                          ],
+                        ),
+                      ),
                       TextFormField(
                         obscureText: true,
                         validator: RequiredValidator(errorText: 'กรุณากรอกรหัสผ่าน'),
                         onSaved: (String? pass) {
                           _password = pass!;
                         },
+                        decoration: InputDecoration(
+                          errorStyle: TextStyle(
+                            fontSize: SettingApp.settingApp.textSizeBody,
+                            color: Colors.red,
+                          ),
+                          prefixIcon: Icon(Icons.password),
+                          prefixIconColor: Colors.white,
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(
+                              color: Colors.white,
+                            ),
+                          ),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: SettingApp.settingApp.textSizeBody,
+                        ),
+                      ),
+                      SizedBox(
+                        height: 20,
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, ForgotPage.routeName);
+                            },
+                            child: Text(
+                              'ลืมรหัสผ่าน ?',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: SettingApp.settingApp.textSizeButton,
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                                decorationColor: Colors.white,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black,
+                                    blurRadius: 5,
+                                    offset: Offset(2, 2),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       ElevatedButton.icon(
                         onPressed: () async {
@@ -114,38 +276,94 @@ class _LoginPageState extends State<LoginPage> {
                             await getLogin();
                             if (!_errLogin) {
                               _fromKey.currentState?.reset();
-                              Navigator.pushNamed(context, AppPage.routeName);
+                              Navigator.pushReplacementNamed(context, AppPage.routeName);
                             }
                           }
                         },
-                        icon: Icon(Icons.login),
-                        label: Text('เข้าสู่ระบบ'),
+                        icon: Icon(
+                          Icons.login,
+                          color: Colors.black87,
+                        ),
+                        label: Text(
+                          'เข้าสู่ระบบ',
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontSize: SettingApp.settingApp.textSizeButton,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pushNamed(context, RegisterPage.routeName);
-                  },
-                  label: Text('สมัครสมาชิก'),
+                SizedBox(
+                  child: Divider(),
+                  height: 20,
                 ),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pushNamed(context, ForgotPage.routeName);
-                  },
-                  label: Text('ลืมรหัสผ่าน'),
-                ),
-                Divider(),
                 ElevatedButton.icon(
                   onPressed: () async {
                     await googleLogin();
-                    if (!_errLogin) {
-                      Navigator.pushNamed(context, AppPage.routeName);
+                    if (!_errLogin && Auth.auth.isLogin) {
+                      try {
+                        Navigator.pushReplacementNamed(context, AppPage.routeName);
+                      } catch (e) {
+                        print('Google Login error : ${e.toString()}');
+                      }
                     }
                   },
-                  label: Text('Google'),
-                )
+                  label: Text(
+                    'Google',
+                    style: TextStyle(
+                      color: Colors.black87,
+                      fontSize: SettingApp.settingApp.textSizeButton,
+                    ),
+                  ),
+                  icon: Image.asset(
+                    'assets/img/google_icon.png',
+                    cacheHeight: 35,
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'ยังไม่มีบัญชี ?',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: SettingApp.settingApp.textSizeBody,
+                        fontWeight: FontWeight.bold,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black,
+                            blurRadius: 5,
+                            offset: Offset(2, 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, RegisterPage.routeName);
+                      },
+                      child: Text(
+                        'สมัครสมาชิกที่นี่',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: SettingApp.settingApp.textSizeButton,
+                          fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.underline,
+                          decorationColor: Colors.white,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black,
+                              blurRadius: 5,
+                              offset: Offset(2, 2),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),

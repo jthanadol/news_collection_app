@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:news_app/api_response/api_action.dart';
 import 'package:news_app/api_response/fact_check_tools_response.dart';
+import 'package:news_app/config/path_file.dart';
+import 'package:news_app/config/setting_app.dart';
+import 'package:news_app/manage_file.dart';
 
 class FactCheckPage extends StatefulWidget {
   static const routeName = "/fact_check_page"; //ชื่อที่ใช้อ้างถึงหน้านี้
@@ -25,6 +28,8 @@ class _FactCheckPageState extends State<FactCheckPage> {
   late String search;
   final ScrollController _scrollController = ScrollController();
 
+  String fileName = '';
+
   @override
   void initState() {
     super.initState();
@@ -34,6 +39,7 @@ class _FactCheckPageState extends State<FactCheckPage> {
 
   @override
   void dispose() {
+    saveFactCheck();
     //ยกเลิกทรัพยากรที่ไม่จำเป็นเมื่อ widget ถูกลบออกจาก widget tree เพื่อป้องกัน memory leak
     _scrollController.dispose();
     super.dispose();
@@ -54,9 +60,42 @@ class _FactCheckPageState extends State<FactCheckPage> {
           _isLoading = true;
           _errorMessage = null;
         });
-
-        _factCheckResponse = await ApiAction.apiAction.searchFactCheck(query: searchText!);
         search = searchText!;
+        fileName = '/factcheck_$search';
+        fileName = fileName.replaceAll('.', '');
+        fileName = (await PathFile.pathFile.getCachePath()) + fileName + '.json';
+
+        DateTime date = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+        print(date);
+        //ตรวจว่ามีไฟล์อยู่ไม
+        if (await ManageFile.manageFile.checkFileExists(fileName: fileName)) {
+          //มีไฟล์
+          Map<String, dynamic> data = await ManageFile.manageFile.readFileJson(fileName: fileName);
+
+          if (date.isAtSameMomentAs(DateTime.parse(data["time"]))) {
+            _factCheckResponse = [FactCheckResponse.fromJson(data['data'][0]), FactCheckResponse.fromJson(data['data'][1])];
+            print('อ่านไฟล์สำเร็จ');
+          } else {
+            await ManageFile.manageFile.deleteAllFilesInDir(pathDir: await PathFile.pathFile.getCachePath());
+
+            _factCheckResponse = await ApiAction.apiAction.searchFactCheck(query: search);
+            Map<String, dynamic> data = {
+              "data": [_factCheckResponse![0].toJson(), _factCheckResponse![1].toJson()],
+              "time": date.toString(),
+            };
+            ManageFile.manageFile.writeFileJson(fileName: fileName, data: data);
+            print('อัพเดทข้อมูลข่าวใหม่สำเร็จ');
+          }
+        } else {
+          //ไม่มีไฟล์
+          _factCheckResponse = await ApiAction.apiAction.searchFactCheck(query: search);
+          Map<String, dynamic> data = {
+            "data": [_factCheckResponse![0].toJson(), _factCheckResponse![1].toJson()],
+            "time": date.toString(),
+          };
+          ManageFile.manageFile.writeFileJson(fileName: fileName, data: data);
+          print('เขียนไฟล์สำเร็จ');
+        }
 
         setState(() {
           _isLoading = false;
@@ -80,18 +119,31 @@ class _FactCheckPageState extends State<FactCheckPage> {
           if (factCheckNext[0].claims!.isEmpty) {
             _isEnd = true;
           }
+          _factCheckResponse![0].claims!.addAll(factCheckNext[0].claims!);
+          _factCheckResponse![0].nextPageToken = factCheckNext[0].nextPageToken;
+          _factCheckResponse![1].claims!.addAll(factCheckNext[1].claims!);
+          _factCheckResponse![1].nextPageToken = factCheckNext[1].nextPageToken;
+
+          await saveFactCheck();
 
           setState(() {
-            _factCheckResponse![0].claims!.addAll(factCheckNext[0].claims!);
-            _factCheckResponse![0].nextPageToken = factCheckNext[0].nextPageToken;
-            _factCheckResponse![1].claims!.addAll(factCheckNext[1].claims!);
-            _factCheckResponse![1].nextPageToken = factCheckNext[1].nextPageToken;
             _fillData = false;
           });
         }
       } catch (e) {
         _errorMessage = e.toString();
       }
+    }
+  }
+
+  Future<void> saveFactCheck() async {
+    if (_factCheckResponse != null) {
+      DateTime date = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+      Map<String, dynamic> data = {
+        "data": [_factCheckResponse![0].toJson(), _factCheckResponse![1].toJson()],
+        "time": date.toString(),
+      };
+      await ManageFile.manageFile.writeFileJson(fileName: fileName, data: data);
     }
   }
 
@@ -110,7 +162,12 @@ class _FactCheckPageState extends State<FactCheckPage> {
               child: ListView.separated(
                 itemBuilder: (context, index) {
                   return ListTile(
-                    title: Text((_isTranslate) ? _factCheckResponse![1].claims![index].text! : _factCheckResponse![0].claims![index].text!),
+                    title: Text(
+                      (_isTranslate) ? _factCheckResponse![1].claims![index].text! : _factCheckResponse![0].claims![index].text!,
+                      style: TextStyle(
+                        fontSize: SettingApp.settingApp.textSizeBody,
+                      ),
+                    ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -120,7 +177,12 @@ class _FactCheckPageState extends State<FactCheckPage> {
                             children: [
                               Row(
                                 children: [
-                                  const Text("ข้อมูลการตรวจสอบ : "),
+                                  Text(
+                                    "ข้อมูลการตรวจสอบ : ",
+                                    style: TextStyle(
+                                      fontSize: SettingApp.settingApp.textSizeBody,
+                                    ),
+                                  ),
                                   Container(
                                     decoration: BoxDecoration(color: (ApiAction.apiAction.checkFact(_factCheckResponse![1].claims![index].claimReview![i].textualRating!)) ? Colors.greenAccent : Colors.redAccent),
                                     child: Row(
@@ -131,17 +193,37 @@ class _FactCheckPageState extends State<FactCheckPage> {
                                           (_isTranslate) ? _factCheckResponse![1].claims![index].claimReview![i].textualRating! : _factCheckResponse![0].claims![index].claimReview![i].textualRating!,
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: SettingApp.settingApp.textSizeBody,
+                                          ),
                                         ),
                                       ],
                                     ),
                                   ),
                                 ],
                               ),
-                              Text((_isTranslate) ? _factCheckResponse![1].claims![index].claimReview![i].title! : _factCheckResponse![0].claims![index].claimReview![i].title!),
+                              Text(
+                                (_isTranslate) ? _factCheckResponse![1].claims![index].claimReview![i].title! : _factCheckResponse![0].claims![index].claimReview![i].title!,
+                                style: TextStyle(
+                                  fontSize: SettingApp.settingApp.textSizeCaption,
+                                ),
+                              ),
                               if (_factCheckResponse![0].claims![index].claimReview![i].reviewDate == null)
-                                const Text("ไม่ทราบวันที่")
+                                Text(
+                                  "ไม่ทราบวันที่",
+                                  style: TextStyle(
+                                    fontSize: SettingApp.settingApp.textSizeCaption,
+                                  ),
+                                )
                               else
-                                Text(DateFormat.yMMMEd().format(DateTime.parse(_factCheckResponse![0].claims![index].claimReview![i].reviewDate!))),
+                                Text(
+                                  DateFormat.yMMMEd().format(
+                                    DateTime.parse(_factCheckResponse![0].claims![index].claimReview![i].reviewDate!),
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: SettingApp.settingApp.textSizeCaption,
+                                  ),
+                                ),
                             ],
                           ),
                       ],
@@ -153,7 +235,13 @@ class _FactCheckPageState extends State<FactCheckPage> {
                 controller: _scrollController,
               ),
             ),
-            if (_fillData) const Text("กำลังโหลดข้อมูลเพิ่มเติม . . ."),
+            if (_fillData)
+              Text(
+                "กำลังโหลดข้อมูลเพิ่มเติม . . .",
+                style: TextStyle(
+                  fontSize: SettingApp.settingApp.textSizeBody,
+                ),
+              ),
           ],
         );
 
@@ -172,14 +260,23 @@ class _FactCheckPageState extends State<FactCheckPage> {
                 ),
                 child: TextField(
                   controller: _textEditingController,
-                  onSubmitted: (value) {
+                  onSubmitted: (value) async {
+                    await saveFactCheck();
                     searchText = value;
                     getFactCheck();
                   },
-                  decoration: const InputDecoration(hintText: "คำค้นหา. . ."),
+                  decoration: InputDecoration(hintText: "คำค้นหา. . ."),
+                  style: TextStyle(
+                    fontSize: SettingApp.settingApp.textSizeBody,
+                  ),
                 ),
               )
-            : const Text("Fact Check"),
+            : Text(
+                "ตรวจสอบข้อเท็จจริง",
+                style: TextStyle(
+                  fontSize: SettingApp.settingApp.textSizeH2,
+                ),
+              ),
         actions: [
           IconButton(
             onPressed: () {
@@ -194,7 +291,8 @@ class _FactCheckPageState extends State<FactCheckPage> {
                 });
               });
             },
-            icon: _isSearchCheck ? const Icon(Icons.close) : const Icon(Icons.search),
+            icon: _isSearchCheck ? Icon(Icons.close) : Icon(Icons.search),
+            iconSize: SettingApp.settingApp.iconSize,
           ),
         ],
         backgroundColor: Colors.black12,
@@ -212,9 +310,14 @@ class _FactCheckPageState extends State<FactCheckPage> {
                   });
                 },
               ),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(right: 8),
-                child: Text("แปลภาษา"),
+                child: Text(
+                  "แปลภาษา",
+                  style: TextStyle(
+                    fontSize: SettingApp.settingApp.textSizeBody,
+                  ),
+                ),
               ),
             ],
           ),
@@ -222,8 +325,13 @@ class _FactCheckPageState extends State<FactCheckPage> {
             child: Stack(
               children: [
                 if (!_isLoading && _factCheckResponse![0].claims!.isEmpty)
-                  const Center(
-                    child: Text("ไม่พบการค้นหา"),
+                  Center(
+                    child: Text(
+                      "ไม่พบการค้นหา",
+                      style: TextStyle(
+                        fontSize: SettingApp.settingApp.textSizeBody,
+                      ),
+                    ),
                   ),
                 if (!_isLoading) buildPage(),
                 if (_errorMessage != null) buildErrorPage(),

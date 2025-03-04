@@ -11,6 +11,8 @@ class ServerConfig {
   final endPointOTP = '/otp'; //endpoint ขอ OTP
   final endPointForgot = '/forgot'; // endpoint เปลี่ยนรหัสผ่าน
   final endPointGoogleLogin = '/googleLogin'; //endpoint เข้าสู่ระบบด้วย google
+  final endPointPopularSearch = '/popularSearch'; //คำยอดนิยมในการค้นหา
+  final endPointSearchHistory = '/searchHistory'; //ประวัติการค้นหา
 
   final category = {
     'ธุรกิจ': 'business',

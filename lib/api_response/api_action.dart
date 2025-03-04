@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:news_app/api_response/fact_check_tools_response.dart';
 import 'package:news_app/config/server_config.dart';
+import 'package:news_app/manage_file.dart';
 import 'news_response.dart';
 
 class ApiAction {
@@ -16,7 +18,7 @@ class ApiAction {
       var response = await http.get(Uri.parse(url));
       print("Method getNews : $url");
       if (response.statusCode == 200) {
-        var data = json.decode(response.body);
+        var data = jsonDecode(response.body);
         return NewsResponse.fromJson(data);
       } else {
         print("method getNews ERROR STATUS : ${response.statusCode}");
@@ -29,20 +31,20 @@ class ApiAction {
   }
 
   //parameter text ใน body คือ คำค้น || since เวลาของข่าวเช่น ตั้งแต่ 2024-1-1 จน ปัจจุบัน, offset ข้ามข่าว เช่น 10 คือ ข้ามไปทำเอาอันที่ 11 เป็นต้นไป
-  Future<NewsResponse> searchNews({required String text, String? since, int offset = 0}) async {
-    String url = "${ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointSearch}offset=$offset";
+  Future<NewsResponse> searchNews({required String text, String? since, int offset = 0, required int accountId}) async {
+    String url = "${ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointSearch}offset=$offset&accountId=$accountId";
     if (since != null) {
       url += "&since=$since";
     }
     var response = await http.post(
       Uri.parse(url),
-      body: json.encode({"text": text}),
+      body: jsonEncode({"text": text}),
       headers: {"Content-type": "application/json"},
     );
     print("Method getNews : $url");
     try {
       if (response.statusCode == 200) {
-        var data = json.decode(response.body);
+        var data = jsonDecode(response.body);
         return NewsResponse.fromJson(data);
       } else {
         print("method getNews ERROR STATUS : ${response.statusCode}");
@@ -66,7 +68,7 @@ class ApiAction {
     try {
       var response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
-        var data = json.decode(response.body);
+        var data = jsonDecode(response.body);
         List<FactCheckResponse> factCheck = [];
         factCheck.add(FactCheckResponse.fromJson(data['fact_check']));
         factCheck.add(FactCheckResponse.fromJson(data['fact_check_th']));
@@ -92,8 +94,8 @@ class ApiAction {
     try {
       var response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
-        var data = json.decode(response.body);
-        print(data["data"]["content"]);
+        var data = jsonDecode(response.body);
+        // print(data["data"]["content"]);
         return [data["data"]["content"], data["data"]["content_th"]];
       } else {
         return [];
@@ -108,7 +110,7 @@ class ApiAction {
     String url = "${ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointAudio}id=$id";
     try {
       var response = await http.get(Uri.parse(url));
-      var data = json.decode(response.body);
+      var data = jsonDecode(response.body);
       List<String> urlAudioTh = [];
       List<String> urlAudioEn = [];
       if (response.statusCode == 200) {
@@ -171,11 +173,11 @@ class ApiAction {
     String url = ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointLogin;
     var response = await http.post(
       Uri.parse(url),
-      body: json.encode({"email": email, "password": password}),
+      body: jsonEncode({"email": email, "password": password}),
       headers: {"Content-type": "application/json"},
     );
 
-    var data = json.decode(response.body);
+    var data = jsonDecode(response.body);
     return [data['msg'], (response.statusCode == 200) ? data['accountId'] : -1];
   }
 
@@ -183,11 +185,11 @@ class ApiAction {
     String url = ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointRegister;
     var response = await http.post(
       Uri.parse(url),
-      body: json.encode({"email": email, "password": password}),
+      body: jsonEncode({"email": email, "password": password}),
       headers: {"Content-type": "application/json"},
     );
 
-    var data = json.decode(response.body);
+    var data = jsonDecode(response.body);
     return [data['msg'], response.statusCode == 200];
   }
 
@@ -195,19 +197,19 @@ class ApiAction {
     String url = ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointOTP;
     var response = await http.post(
       Uri.parse(url),
-      body: json.encode({"email": email}),
+      body: jsonEncode({"email": email}),
       headers: {"Content-type": "application/json"},
     );
 
-    var data = json.decode(response.body);
+    var data = jsonDecode(response.body);
     return [data['msg'], response.statusCode == 200];
   }
 
-  getForgot({required String email, required String otp, required String password}) async {
+  Future<List> getForgot({required String email, required String otp, required String password}) async {
     String url = ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointForgot;
     var response = await http.put(
       Uri.parse(url),
-      body: json.encode({
+      body: jsonEncode({
         "email": email,
         "password": password,
         "otp": otp,
@@ -215,7 +217,7 @@ class ApiAction {
       headers: {"Content-type": "application/json"},
     );
 
-    var data = json.decode(response.body);
+    var data = jsonDecode(response.body);
     return [data['msg'], response.statusCode == 200];
   }
 
@@ -223,11 +225,55 @@ class ApiAction {
     String url = ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointGoogleLogin;
     var response = await http.post(
       Uri.parse(url),
-      body: json.encode({"email": email, "googleId": googleId}),
+      body: jsonEncode({"email": email, "googleId": googleId}),
       headers: {"Content-type": "application/json"},
     );
 
-    var data = json.decode(response.body);
+    var data = jsonDecode(response.body);
     return [data['msg'], (response.statusCode == 200) ? data['accountId'] : -1];
+  }
+
+  Future<List<String>> getPopularSearch() async {
+    String url = ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointPopularSearch;
+    var response = await http.get(Uri.parse(url));
+    var data = jsonDecode(response.body);
+    if (response.statusCode == 200) {
+      List<String> word = [];
+      for (var i = 0; i < data['result'].length; i++) {
+        word.add(data['result'][i]['search_text']);
+      }
+      return word;
+    } else {
+      return [];
+    }
+  }
+
+  Future<bool> downloadImage({required String url, required String fileName}) async {
+    try {
+      var response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        await ManageFile.manageFile.writeFileBytes(fileName: fileName, bytes: response.bodyBytes);
+        print('เขียนรูปสำเร็จ');
+        return true;
+      }
+    } catch (e) {
+      print('downloadImage Error : ${e.toString()}');
+    }
+
+    return false;
+  }
+
+  //เช็คว่าเป็น url ไม
+  bool isValidUrl({required String url}) {
+    try {
+      final uri = Uri.parse(url);
+
+      //uri.hasScheme ตรวจว่ามี Scheme หรือไม่ เช่น http, https, ftp, mailto ฯลฯ หรือไม่
+      //uri.hasAuthority ตรวจว่ามีdomain name หรือ IP address หรือไม่
+      return uri.hasScheme && uri.hasAuthority;
+    } catch (e) {
+      return false;
+    }
   }
 }

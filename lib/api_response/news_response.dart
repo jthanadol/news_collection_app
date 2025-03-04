@@ -33,27 +33,49 @@ class News {
   String? descriptionTh;
   FactCheckResponse? factCheck;
   FactCheckResponse? factCheckTh;
-  String? content = null;
-  String? contentTh = null;
-  List<String> audioTh = [];
-  List<String> audioEn = [];
+  String? content;
+  String? contentTh;
+  List<String>? audioTh = [];
+  List<String>? audioEn = [];
 
-  News({this.newId, this.title, this.description, this.imgUrl, this.newUrl, this.pubDate, this.sourceName, this.sourceIcon, this.titleTh, this.descriptionTh, this.factCheck, this.factCheckTh});
+  News({
+    this.newId,
+    this.title,
+    this.description,
+    this.imgUrl,
+    this.newUrl,
+    this.pubDate,
+    this.sourceName,
+    this.sourceIcon,
+    this.titleTh,
+    this.descriptionTh,
+    this.factCheck,
+    this.factCheckTh,
+    this.content,
+    this.contentTh,
+    this.audioTh,
+    this.audioEn,
+  });
 
   factory News.fromJson(Map<String, dynamic> json) {
     return News(
-        newId: json['new_id'],
-        title: json['title'],
-        description: json['description'],
-        imgUrl: json['img_url'],
-        newUrl: json['new_url'],
-        pubDate: json['pub_date'],
-        sourceName: json['source_name'],
-        sourceIcon: json['source_icon'],
-        titleTh: json['title_th'],
-        descriptionTh: json['description_th'],
-        factCheck: FactCheckResponse.fromJson(json['fact_check']),
-        factCheckTh: FactCheckResponse.fromJson(json['fact_check_th']));
+      newId: json['new_id'],
+      title: json['title'],
+      description: json['description'],
+      imgUrl: json['img_url'],
+      newUrl: json['new_url'],
+      pubDate: json['pub_date'],
+      sourceName: json['source_name'],
+      sourceIcon: json['source_icon'],
+      titleTh: json['title_th'],
+      descriptionTh: json['description_th'],
+      factCheck: FactCheckResponse.fromJson(json['fact_check']),
+      factCheckTh: FactCheckResponse.fromJson(json['fact_check_th']),
+      content: json['content'],
+      contentTh: json['content_th'],
+      audioEn: (json['audioEn'] == null) ? [] : json['audioEn'],
+      audioTh: (json['audioTh'] == null) ? [] : json['audioTh'],
+    );
   }
 
   Map<String, dynamic> toJson() {
@@ -72,6 +94,8 @@ class News {
       'fact_check_th': factCheckTh?.toJson(),
       'content': content,
       'content_th': contentTh,
+      'audio_th': audioTh,
+      'audio_en': audioEn,
     };
   }
 }
