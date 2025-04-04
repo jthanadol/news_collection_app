@@ -55,6 +55,21 @@ class _RegisterPageState extends State<RegisterPage> {
             Navigator.pop(context);
           },
         ),
+        title: Text(
+          'สมัครสมาชิก',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: SettingApp.settingApp.textSizeH1,
+            fontWeight: FontWeight.bold,
+            shadows: [
+              Shadow(
+                color: Colors.black,
+                blurRadius: 5,
+                offset: Offset(2, 2),
+              ),
+            ],
+          ),
+        ),
       ),
       body: Container(
         width: double.infinity,
@@ -71,24 +86,6 @@ class _RegisterPageState extends State<RegisterPage> {
               key: _formKey,
               child: Column(
                 children: [
-                  Text(
-                    'สมัครสมาชิก',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: SettingApp.settingApp.textSizeH1,
-                      fontWeight: FontWeight.bold,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black,
-                          blurRadius: 5,
-                          offset: Offset(2, 2),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 50,
-                  ),
                   if (_errRegister)
                     Text(
                       _msg,
@@ -175,7 +172,10 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   TextFormField(
                     obscureText: true,
-                    validator: RequiredValidator(errorText: 'กรุณากรอกรหัสผ่าน'),
+                    validator: MultiValidator([
+                      RequiredValidator(errorText: 'กรุณากรอกรหัสผ่าน'),
+                      LengthRangeValidator(min: 6, max: 100, errorText: 'รหัสผ่านสั้นเกินไป'),
+                    ]),
                     onSaved: (String? pass) {
                       _password = pass!;
                     },
@@ -222,7 +222,10 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   TextFormField(
                     obscureText: true,
-                    validator: RequiredValidator(errorText: 'กรุณากรอกรหัสผ่านยืนยัน'),
+                    validator: MultiValidator([
+                      RequiredValidator(errorText: 'กรุณากรอกยืนยันรหัสผ่าน'),
+                      LengthRangeValidator(min: 6, max: 100, errorText: 'ยืนยันรหัสผ่านสั้นเกินไป'),
+                    ]),
                     onSaved: (String? confirmPass) {
                       _confirmPassword = confirmPass!;
                     },
@@ -259,6 +262,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       });
                       if (_formKey.currentState!.validate()) {
                         _formKey.currentState!.save();
+
                         if (_password != _confirmPassword) {
                           setState(() {
                             _msg = 'รหัสกับยืนยันรหัสไม่ตรงกัน';

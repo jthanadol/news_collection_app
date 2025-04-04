@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:news_app/api_response/fact_check_tools_response.dart';
 import 'package:news_app/config/server_config.dart';
@@ -30,14 +31,14 @@ class ApiAction {
   }
 
   //parameter text ใน body คือ คำค้น || since เวลาของข่าวเช่น ตั้งแต่ 2024-1-1 จน ปัจจุบัน, offset ข้ามข่าว เช่น 10 คือ ข้ามไปทำเอาอันที่ 11 เป็นต้นไป
-  Future<NewsResponse> searchNews({required String text, String? since, int offset = 0, required int accountId}) async {
+  Future<NewsResponse> searchNews({required String text, String? since, int offset = 0, required int accountId, bool waitBingSearch = true}) async {
     String url = "${ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointSearch}offset=$offset&accountId=$accountId";
     if (since != null) {
       url += "&since=$since";
     }
     var response = await http.post(
       Uri.parse(url),
-      body: jsonEncode({"text": text}),
+      body: jsonEncode({"text": text, "waitBingSearch": waitBingSearch}),
       headers: {"Content-type": "application/json"},
     );
     print("Method getNews : $url");
@@ -110,24 +111,17 @@ class ApiAction {
     try {
       var response = await http.get(Uri.parse(url));
       var data = jsonDecode(response.body);
-      List<String> urlAudioTh = [];
-      List<String> urlAudioEn = [];
       if (response.statusCode == 200) {
-        if (data['msg'] == 'ส่งรายชื่อไฟล์สำเร็จ') {
-          for (var i = 0; i < data['fileTH'].length; i++) {
-            urlAudioTh.add(ServerConfig.serverConfig.urlServer + data['path'].substring(1) + '/th/' + data['fileTH'][i]);
-          }
-          for (var i = 0; i < data['fileEN'].length; i++) {
-            urlAudioEn.add(ServerConfig.serverConfig.urlServer + data['path'].substring(1) + '/en/' + data['fileEN'][i]);
-          }
-        }
-        return [data['msg'], urlAudioTh, urlAudioEn];
+        return [
+          (data['fileTH'] != null) ? '${ServerConfig.serverConfig.urlServer}${data['path'].substring(1)}/th/${data['fileTH']}' : null,
+          (data['fileEN'] != null) ? '${ServerConfig.serverConfig.urlServer}${data['path'].substring(1)}/en/${data['fileEN']}' : null,
+        ];
       } else {
-        return [data['msg'], [], []];
+        return [null, null];
       }
     } catch (e) {
       print('getAudio Error ' + e.toString());
-      return ['error', [], []];
+      return [null, null];
     }
   }
 
@@ -204,15 +198,22 @@ class ApiAction {
     return [data['msg'], response.statusCode == 200];
   }
 
-  Future<List> getForgot({required String email, required String otp, required String password}) async {
+  Future<List> forgot({required String email, String? otp, String? oldPass, required String password}) async {
     String url = ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointForgot;
+    Map<String, dynamic> body = (otp != null && otp.isNotEmpty)
+        ? {
+            "email": email,
+            "password": password,
+            "otp": otp,
+          }
+        : {
+            "email": email,
+            "password": password,
+            "oldPassword": oldPass,
+          };
     var response = await http.put(
       Uri.parse(url),
-      body: jsonEncode({
-        "email": email,
-        "password": password,
-        "otp": otp,
-      }),
+      body: jsonEncode(body),
       headers: {"Content-type": "application/json"},
     );
 
@@ -247,17 +248,43 @@ class ApiAction {
     }
   }
 
-  Future<bool> downloadImage({required String url, required String fileName}) async {
+  Future<List> getHistorySearch({required int accountId}) async {
+    String url = '${ServerConfig.serverConfig.urlServer}${ServerConfig.serverConfig.endPointSearchHistory}?accountId=$accountId';
     try {
       var response = await http.get(Uri.parse(url));
-
       if (response.statusCode == 200) {
-        await ManageFile.manageFile.writeFileBytes(fileName: fileName, bytes: response.bodyBytes);
-        print('เขียนรูปสำเร็จ');
-        return true;
+        List<String> word = [];
+        List<String> date = [];
+        var data = jsonDecode(response.body);
+        for (var i = 0; i < data['history'].length; i++) {
+          word.add(data['history'][i]['search_text']);
+          date.add(data['history'][i]['search_date']);
+        }
+        return [word, date];
+      } else {
+        return [];
       }
     } catch (e) {
-      print('downloadImage Error : ${e.toString()}');
+      print('getHistory Error : ' + e.toString());
+      return [];
+    }
+  }
+
+  Future<bool> downloadFile({required String url, required String fileName}) async {
+    try {
+      if (await ManageFile.manageFile.checkFileExists(fileName: fileName)) {
+        print('มีไฟล์แล้ว');
+      } else {
+        var response = await http.get(Uri.parse(url));
+        if (response.statusCode == 200) {
+          await ManageFile.manageFile.writeFileBytes(fileName: fileName, bytes: response.bodyBytes);
+          print('ดาวน์โหลดสำเร็จ');
+        }
+      }
+
+      return true;
+    } catch (e) {
+      print('downloadFile Error : ${e.toString()}');
     }
 
     return false;
@@ -272,6 +299,16 @@ class ApiAction {
       //uri.hasAuthority ตรวจว่ามีdomain name หรือ IP address หรือไม่
       return uri.hasScheme && uri.hasAuthority;
     } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> checkInternet() async {
+    List<ConnectivityResult> connectivityResult = await Connectivity().checkConnectivity();
+    //ถ้ามีการเชื่อมเน็ตมือถือหรือ wifi ให้ return true
+    if (connectivityResult.contains(ConnectivityResult.mobile) || connectivityResult.contains(ConnectivityResult.wifi)) {
+      return true;
+    } else {
       return false;
     }
   }

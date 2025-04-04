@@ -29,6 +29,7 @@ class _LoginPageState extends State<LoginPage> {
 
   void initState() {
     super.initState();
+    SettingApp.settingApp.readSettingFile();
     checkLoginFile();
   }
 
@@ -98,7 +99,7 @@ class _LoginPageState extends State<LoginPage> {
             fit: BoxFit.cover,
           ),
         ),
-        padding: EdgeInsets.only(left: 16, right: 16),
+        padding: const EdgeInsets.only(left: 16, right: 16),
         child: Center(
           child: SingleChildScrollView(
             child: Column(
@@ -111,7 +112,7 @@ class _LoginPageState extends State<LoginPage> {
                     fontSize: SettingApp.settingApp.textSizeH1,
                     fontWeight: FontWeight.bold,
                     shadows: [
-                      Shadow(
+                      const Shadow(
                         color: Colors.black,
                         blurRadius: 5,
                         offset: Offset(2, 2),
@@ -130,7 +131,7 @@ class _LoginPageState extends State<LoginPage> {
                       fontSize: SettingApp.settingApp.textSizeBody,
                     ),
                   ),
-                SizedBox(
+                const SizedBox(
                   height: 16,
                 ),
                 Form(
@@ -144,7 +145,7 @@ class _LoginPageState extends State<LoginPage> {
                           fontWeight: FontWeight.bold,
                           fontSize: SettingApp.settingApp.textSizeH3,
                           shadows: [
-                            Shadow(
+                            const Shadow(
                               color: Colors.black,
                               blurRadius: 5,
                               offset: Offset(2, 2),
@@ -166,14 +167,14 @@ class _LoginPageState extends State<LoginPage> {
                             fontSize: SettingApp.settingApp.textSizeBody,
                             color: Colors.red,
                           ),
-                          prefixIcon: Icon(Icons.email),
+                          prefixIcon: const Icon(Icons.email),
                           prefixIconColor: Colors.white,
-                          enabledBorder: UnderlineInputBorder(
+                          enabledBorder: const UnderlineInputBorder(
                             borderSide: BorderSide(
                               color: Colors.white,
                             ),
                           ),
-                          focusedBorder: UnderlineInputBorder(
+                          focusedBorder: const UnderlineInputBorder(
                             borderSide: BorderSide(
                               color: Colors.white,
                             ),
@@ -184,7 +185,7 @@ class _LoginPageState extends State<LoginPage> {
                           fontSize: SettingApp.settingApp.textSizeBody,
                           fontWeight: FontWeight.bold,
                           shadows: [
-                            Shadow(
+                            const Shadow(
                               color: Colors.black,
                               blurRadius: 5,
                               offset: Offset(2, 2),
@@ -192,7 +193,7 @@ class _LoginPageState extends State<LoginPage> {
                           ],
                         ),
                       ),
-                      SizedBox(
+                      const SizedBox(
                         height: 20,
                       ),
                       Text(
@@ -202,7 +203,7 @@ class _LoginPageState extends State<LoginPage> {
                           fontWeight: FontWeight.bold,
                           fontSize: SettingApp.settingApp.textSizeH3,
                           shadows: [
-                            Shadow(
+                            const Shadow(
                               color: Colors.black,
                               blurRadius: 5,
                               offset: Offset(2, 2),
@@ -221,14 +222,14 @@ class _LoginPageState extends State<LoginPage> {
                             fontSize: SettingApp.settingApp.textSizeBody,
                             color: Colors.red,
                           ),
-                          prefixIcon: Icon(Icons.password),
+                          prefixIcon: const Icon(Icons.password),
                           prefixIconColor: Colors.white,
-                          enabledBorder: UnderlineInputBorder(
+                          enabledBorder: const UnderlineInputBorder(
                             borderSide: BorderSide(
                               color: Colors.white,
                             ),
                           ),
-                          focusedBorder: UnderlineInputBorder(
+                          focusedBorder: const UnderlineInputBorder(
                             borderSide: BorderSide(
                               color: Colors.white,
                             ),
@@ -239,7 +240,7 @@ class _LoginPageState extends State<LoginPage> {
                           fontSize: SettingApp.settingApp.textSizeBody,
                         ),
                       ),
-                      SizedBox(
+                      const SizedBox(
                         height: 20,
                       ),
                       Row(
@@ -258,7 +259,7 @@ class _LoginPageState extends State<LoginPage> {
                                 decoration: TextDecoration.underline,
                                 decorationColor: Colors.white,
                                 shadows: [
-                                  Shadow(
+                                  const Shadow(
                                     color: Colors.black,
                                     blurRadius: 5,
                                     offset: Offset(2, 2),
@@ -283,6 +284,7 @@ class _LoginPageState extends State<LoginPage> {
                         icon: Icon(
                           Icons.login,
                           color: Colors.black87,
+                          size: SettingApp.settingApp.iconSize,
                         ),
                         label: Text(
                           'เข้าสู่ระบบ',
@@ -295,9 +297,10 @@ class _LoginPageState extends State<LoginPage> {
                     ],
                   ),
                 ),
-                SizedBox(
-                  child: Divider(),
-                  height: 20,
+                Divider(
+                  color: Colors.white,
+                  thickness: 1,
+                  height: 24,
                 ),
                 ElevatedButton.icon(
                   onPressed: () async {
@@ -319,7 +322,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   icon: Image.asset(
                     'assets/img/google_icon.png',
-                    cacheHeight: 35,
+                    cacheHeight: SettingApp.settingApp.iconSize.toInt(),
                   ),
                 ),
                 Row(
@@ -332,7 +335,7 @@ class _LoginPageState extends State<LoginPage> {
                         fontSize: SettingApp.settingApp.textSizeBody,
                         fontWeight: FontWeight.bold,
                         shadows: [
-                          Shadow(
+                          const Shadow(
                             color: Colors.black,
                             blurRadius: 5,
                             offset: Offset(2, 2),
@@ -353,7 +356,7 @@ class _LoginPageState extends State<LoginPage> {
                           decoration: TextDecoration.underline,
                           decorationColor: Colors.white,
                           shadows: [
-                            Shadow(
+                            const Shadow(
                               color: Colors.black,
                               blurRadius: 5,
                               offset: Offset(2, 2),

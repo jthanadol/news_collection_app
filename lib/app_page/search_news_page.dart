@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -6,49 +7,47 @@ import 'package:intl/intl.dart';
 import 'package:news_app/api_response/api_action.dart';
 import 'package:news_app/api_response/news_response.dart';
 import 'package:news_app/app_page/read_news_page.dart';
-import 'package:news_app/app_page/search_news_page.dart';
-import 'package:news_app/config/path_file.dart';
-import 'package:news_app/config/server_config.dart';
+import 'package:news_app/config/auth.dart';
 import 'package:news_app/config/setting_app.dart';
-import 'package:news_app/manage_file.dart';
 
-class WorldPage extends StatefulWidget {
-  static const routeName = "/world_page"; //ชื่อที่ใช้อ้างถึงหน้านี้
-  const WorldPage({super.key});
+class SearchNewsPage extends StatefulWidget {
+  static const routeName = "/search_news_page";
+
+  const SearchNewsPage({super.key});
 
   @override
-  State<WorldPage> createState() => _WorldPageState();
+  State<SearchNewsPage> createState() => _SearchNewsPageState();
 }
 
-class _WorldPageState extends State<WorldPage> {
-  NewsResponse? _newsResponse; //เก็บข่าวที่จะใช้แสดงบนหน้าจอ
-  bool _isLoading = false; //สถานะการโหลดข้อมูลข่าวใหม่
+class _SearchNewsPageState extends State<SearchNewsPage> {
+  final TextEditingController _textEditingController = TextEditingController();
+  bool _isSearchCheck = true;
+  String? searchText = '';
+  bool _isLoading = false;
+  bool _fillData = false;
+  bool _isTranslate = true;
   String? _errorMessage;
+  NewsResponse? _newsResponse;
   final ScrollController _scrollController = ScrollController();
-  bool _fillData = false; //สถานะการเติมข้อมูลข่าว
-  bool _isTranslate = true; //สถานะว่าจะแสดงแบบแปลภาษาหรือไม่
   bool _isNewsEnd = false; //ข้อมูลที่ขอกับ server หมดหรือยังถ้ายังเป็น false
-  bool _isLast = true; //true เรียงข่าวจากล่าสุด
-  late Timer _timer;
-
-  String fileName = ''; //ไฟล์ cache ที่อ่านล่าสุด
-
-  String? _country = 'สหรัฐอเมริกา';
-  String _category = 'ธุรกิจ';
-  String _date = 'last';
-  final category = ServerConfig.serverConfig.category;
-  final country = ServerConfig.serverConfig.country;
+  List<String>? popularWords; //list คำค้นหายอดฮิต
+  List<String>? filteredWords;
+  List<String>? historySearch;
+  List<String>? historyDate;
+  bool _openHistory = false;
+  bool _isNewsFromWaitBingSearch = false;
 
   @override
   void initState() {
     super.initState();
-    getNews();
     _scrollController.addListener(_onScroll);
+    getPopularSearch();
+    getHistorySearch();
   }
 
   @override
   void dispose() {
-    saveNews();
+    _textEditingController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -60,53 +59,31 @@ class _WorldPageState extends State<WorldPage> {
   }
 
   Future<void> getNews() async {
-    try {
-      setState(() {
-        _isLoading = true;
-        _errorMessage = null;
-      });
-      DateTime date = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-      print(date);
-      String dirFile = await PathFile.pathFile.getCachePath() + '/WO';
-      await ManageFile.manageFile.createDir(dirPath: dirFile);
-      fileName = '$dirFile/${country[_country]}${category[_category]!}$_date.json';
-      print(fileName);
+    if (searchText!.trim().isNotEmpty) {
+      if (await ApiAction.apiAction.checkInternet()) {
+        try {
+          setState(() {
+            _isLoading = true;
+            _errorMessage = null;
+          });
+          getNewsButWaitBingSearch(searchText!);
+          NewsResponse newsResponse = await ApiAction.apiAction.searchNews(text: searchText!, accountId: Auth.auth.accountId, waitBingSearch: false);
+          if (!_isNewsFromWaitBingSearch) {
+            _newsResponse = newsResponse;
+          }
 
-      //ตรวจว่ามีไฟล์อยู่ไม
-      if (await ManageFile.manageFile.checkFileExists(fileName: fileName)) {
-        //มีไฟล์
-        Map<String, dynamic> data = await ManageFile.manageFile.readFileJson(fileName: fileName);
-        //ถ้าเป็นไฟล์เก่าจะลบแล้ว ดึงข้อมูลมาใหม่
-        if (date.isAtSameMomentAs(DateTime.parse(data["time"]))) {
-          _newsResponse = NewsResponse.fromJson(data['data']);
-          print('อ่านไฟล์สำเร็จ');
-        } else {
-          _newsResponse = NewsResponse.fromJson(data['data']);
-          deleteCacheAndGetNews(dirFile, fileName);
+          setState(() {
+            _isLoading = false;
+          });
+        } catch (e) {
+          _errorMessage = e.toString();
         }
       } else {
-        //ไม่มีไฟล์
-        if (await ApiAction.apiAction.checkInternet()) {
-          _newsResponse = await ApiAction.apiAction.getNews(country: country[_country]!, category: category[_category]!, date: _date);
-          Map<String, dynamic> data = {
-            "data": _newsResponse!.toJson(),
-            "time": date.toString(),
-          };
-          ManageFile.manageFile.writeFileJson(fileName: fileName, data: data);
-          print('เขียนไฟล์สำเร็จ');
-        } else {
-          setState(() {
-            _errorMessage = 'ยังไม่ได้ทำการเชื่อมต่ออินเตอร์เน็ต';
-            _newsResponse = null;
-          });
-        }
+        setState(() {
+          _newsResponse = null;
+          _errorMessage = 'ยังไม่ได้ทำการเชื่อมต่ออินเตอร์เน็ต';
+        });
       }
-
-      setState(() {
-        _isLoading = false;
-      });
-    } catch (e) {
-      _errorMessage = e.toString();
     }
   }
 
@@ -119,14 +96,13 @@ class _WorldPageState extends State<WorldPage> {
               _errorMessage = null;
               _fillData = true;
             });
-            var newsNext = await ApiAction.apiAction.getNews(country: country[_country]!, category: category[_category]!, date: _date, offset: _newsResponse!.news!.length);
+            var newsNext = await ApiAction.apiAction.searchNews(text: searchText!, offset: _newsResponse!.news!.length, accountId: Auth.auth.accountId, waitBingSearch: false);
             if (newsNext.news!.isEmpty) {
               _isNewsEnd = true;
             } else {
               _newsResponse!.news!.addAll(newsNext.news!);
             }
-            await saveNews();
-            print('เขียนข้อมูลเพิ่มสำเร็จ');
+
             setState(() {
               _fillData = false;
             });
@@ -138,16 +114,26 @@ class _WorldPageState extends State<WorldPage> {
     }
   }
 
-  Future<void> deleteCacheAndGetNews(String dirFile, String file) async {
-    if (await ApiAction.apiAction.checkInternet()) {
-      NewsResponse newsResponse = await ApiAction.apiAction.getNews(country: country[_country]!, category: category[_category]!, date: _date);
-      if (file == fileName) {
-        await ManageFile.manageFile.deleteAllFilesInDir(pathDir: dirFile);
+  Future<void> getNewsButWaitBingSearch(String text) async {
+    NewsResponse newsResponse = await ApiAction.apiAction.searchNews(text: text, accountId: Auth.auth.accountId, waitBingSearch: true);
+    bool repeatedNews = true;
+    if (_newsResponse != null) {
+      for (var i = 0; i < newsResponse.news!.length; i++) {
+        if (jsonEncode(_newsResponse!.news![i].toJson()) != jsonEncode(newsResponse.news![i].toJson())) {
+          print("ช่องที่ $i ไม่เท่ากัน");
+          repeatedNews = false;
+          break;
+        }
+      }
+    }
+    if (!repeatedNews) {
+      if (text == searchText) {
         setState(() {
           _newsResponse = newsResponse;
+          _isNewsFromWaitBingSearch = true;
           _isLoading = true;
         });
-        _timer = Timer.periodic(
+        Timer.periodic(
           const Duration(milliseconds: 800),
           (timer) {
             setState(() {
@@ -155,37 +141,119 @@ class _WorldPageState extends State<WorldPage> {
             });
           },
         );
-        saveNews();
       }
-      print('อัพเดทข้อมูลข่าวใหม่สำเร็จ');
     }
   }
 
-  Future<void> saveNews() async {
-    if (_newsResponse != null) {
-      DateTime date = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
-      Map<String, dynamic> data = {
-        "data": _newsResponse!.toJson(),
-        "time": date.toString(),
-      };
-      await ManageFile.manageFile.writeFileJson(fileName: fileName, data: data);
-    }
+  Future<void> getPopularSearch() async {
+    try {
+      if (popularWords == null) {
+        try {
+          popularWords = await ApiAction.apiAction.getPopularSearch();
+        } catch (e) {
+          popularWords = [];
+        }
+        filteredWords = List.from(popularWords!);
+        setState(() {});
+      }
+    } catch (e) {}
   }
 
-  Future<void> saveImageNews({required int newId, required int newIndex, required String urlImage}) async {
-    if (await ApiAction.apiAction.checkInternet()) {
-      String imagePath = await PathFile.pathFile.getCachePath();
-      imagePath += '/$newId.jpg';
-      bool canDownload = await ApiAction.apiAction.downloadFile(url: urlImage, fileName: imagePath);
-      if (canDownload) {
-        _newsResponse!.news![newIndex].imgUrl = imagePath;
-        print('ดาวโหลดรูป ${_newsResponse!.news![newIndex].imgUrl}');
+  Future<void> getHistorySearch() async {
+    try {
+      if (historySearch == null || historyDate == null) {
+        var res = await ApiAction.apiAction.getHistorySearch(accountId: Auth.auth.accountId);
+        if (res.isNotEmpty) {
+          historySearch = res[0];
+          historyDate = res[1];
+        } else {
+          historySearch = [];
+          historyDate = [];
+        }
       }
+    } catch (e) {
+      historySearch = [];
+      historyDate = [];
     }
+    setState(() {});
+  }
+
+  void onSearchChanged(String search) {
+    if (search.isEmpty) {
+      filteredWords = List.from(popularWords!);
+    } else {
+      filteredWords = popularWords!.where((word) => word.toLowerCase().contains(search.toLowerCase())).toList();
+    }
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
+    buildHistoryPage() => (historySearch != null && historySearch!.isNotEmpty)
+        ? Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                    itemBuilder: (context, index) {
+                      return Column(
+                        children: [
+                          ListTile(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            leading: Icon(
+                              Icons.history,
+                              color: SettingApp.settingApp.colorIcon,
+                            ),
+                            tileColor: SettingApp.settingApp.colorButton,
+                            title: Text(
+                              historySearch![index],
+                              style: TextStyle(
+                                fontSize: SettingApp.settingApp.textSizeBody,
+                                color: SettingApp.settingApp.colorText,
+                              ),
+                            ),
+                            subtitle: Text(
+                              DateFormat.yMMMEd().format(
+                                DateTime.parse(historyDate![index]),
+                              ),
+                              style: TextStyle(
+                                fontSize: SettingApp.settingApp.textSizeCaption,
+                                color: SettingApp.settingApp.colorText,
+                              ),
+                            ),
+                            onTap: () {
+                              setState(() {
+                                _textEditingController.text = historySearch![index];
+                                searchText = historySearch![index];
+                                _openHistory = false;
+                                _isSearchCheck = true;
+                              });
+                            },
+                          ),
+                          Divider(
+                            color: SettingApp.settingApp.colorLine,
+                            height: 3,
+                            thickness: 3,
+                          ),
+                        ],
+                      );
+                    },
+                    itemCount: historySearch!.length),
+              ),
+            ],
+          )
+        : Center(
+            child: Text(
+              'ไม่พบประวัติการค้นหา',
+              style: TextStyle(
+                color: SettingApp.settingApp.colorText,
+                fontWeight: FontWeight.bold,
+                fontSize: SettingApp.settingApp.textSizeH3,
+              ),
+            ),
+          );
+
     buildPage() => Column(
           children: [
             const SizedBox(
@@ -201,15 +269,14 @@ class _WorldPageState extends State<WorldPage> {
                           image = Image.network(
                             _newsResponse!.news![index].imgUrl!,
                             errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
-                            fit: BoxFit.cover,
+                            width: 150,
                           );
-                          saveImageNews(newId: _newsResponse!.news![index].newsId!, newIndex: index, urlImage: _newsResponse!.news![index].imgUrl!);
                         }
                       } else {
                         image = Image.file(
                           File(_newsResponse!.news![index].imgUrl!),
                           errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
-                          fit: BoxFit.cover,
+                          width: 150,
                         );
                       }
                     }
@@ -359,18 +426,16 @@ class _WorldPageState extends State<WorldPage> {
                                   ),
                               ],
                             ),
-                            onTap: () async {
-                              await saveNews();
-                              await Navigator.pushNamed(
+                            onTap: () {
+                              Navigator.pushNamed(
                                 context,
                                 ReadNewsPage.routeName,
                                 arguments: {
                                   "index": index,
-                                  "fileName": fileName,
+                                  "fileName": '',
                                   "new": _newsResponse!.news![index],
                                 },
                               );
-                              await getNews();
                             },
                           ),
                         ),
@@ -394,13 +459,6 @@ class _WorldPageState extends State<WorldPage> {
           ],
         );
 
-    buildLoadingOverlay() => Container(
-        color: Colors.black.withOpacity(0.2),
-        child: Center(
-            child: CircularProgressIndicator(
-          color: SettingApp.settingApp.colorIconHighlight,
-        )));
-
     buildErrorPage() => Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -413,7 +471,7 @@ class _WorldPageState extends State<WorldPage> {
                 color: SettingApp.settingApp.colorText,
               ),
             ),
-            const SizedBox(
+            SizedBox(
               height: 16,
             ),
             ElevatedButton.icon(
@@ -443,10 +501,60 @@ class _WorldPageState extends State<WorldPage> {
           ],
         );
 
+    buildLoadingOverlay() => Container(
+        color: Colors.black.withOpacity(0.2),
+        child: Center(
+            child: CircularProgressIndicator(
+          color: SettingApp.settingApp.colorIconHighlight,
+        )));
+
+    buildListPopularSearch() => Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                  itemBuilder: (context, index) {
+                    return Column(
+                      children: [
+                        ListTile(
+                          leading: Icon(
+                            (historySearch == null) ? Icons.trending_up : (historySearch!.contains(filteredWords![index]) ? Icons.history : Icons.trending_up),
+                            color: SettingApp.settingApp.colorIcon,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          tileColor: SettingApp.settingApp.colorButton,
+                          title: Text(
+                            filteredWords![index],
+                            style: TextStyle(
+                              fontSize: SettingApp.settingApp.textSizeBody,
+                              color: SettingApp.settingApp.colorText,
+                            ),
+                          ),
+                          onTap: () {
+                            setState(() {
+                              _textEditingController.text = filteredWords![index];
+                              searchText = filteredWords![index];
+                              onSearchChanged(filteredWords![index]);
+                            });
+                          },
+                        ),
+                        Divider(
+                          color: SettingApp.settingApp.colorLine,
+                          height: 3,
+                          thickness: 3,
+                        ),
+                      ],
+                    );
+                  },
+                  itemCount: filteredWords!.length),
+            ),
+          ],
+        );
+
     return Scaffold(
       backgroundColor: SettingApp.settingApp.colorBackground,
       appBar: AppBar(
-        automaticallyImplyLeading: false,
         flexibleSpace: Container(
           decoration: BoxDecoration(
             boxShadow: (SettingApp.settingApp.darkThemp)
@@ -465,200 +573,177 @@ class _WorldPageState extends State<WorldPage> {
             ),
           ),
         ),
-        title: Text(
-          "ข่าวต่างประเทศ",
-          style: TextStyle(
-            fontSize: SettingApp.settingApp.textSizeH2,
-            color: SettingApp.settingApp.colorText,
-            fontWeight: FontWeight.bold,
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          iconSize: SettingApp.settingApp.iconSize,
+          color: SettingApp.settingApp.colorIcon,
         ),
         centerTitle: true,
+        title: _isSearchCheck
+            ? Padding(
+                padding: const EdgeInsets.only(left: 8, right: 8),
+                child: TextField(
+                  controller: _textEditingController,
+                  onChanged: (value) {
+                    onSearchChanged(value);
+                  },
+                  onSubmitted: (value) {
+                    searchText = value;
+
+                    setState(() {
+                      _isSearchCheck = false;
+                    });
+                    getNews();
+                  },
+                  decoration: InputDecoration(
+                    hintText: "คำค้นหา. . .",
+                    hintStyle: TextStyle(
+                      fontSize: SettingApp.settingApp.textSizeBody,
+                      color: SettingApp.settingApp.colorText,
+                    ),
+                    filled: true,
+                    fillColor: SettingApp.settingApp.colorBackground,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: SettingApp.settingApp.colorIconHighlight,
+                        width: 2,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: SettingApp.settingApp.colorIconHighlight,
+                        width: 2,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: SettingApp.settingApp.colorIconHighlight,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  style: TextStyle(
+                    fontSize: SettingApp.settingApp.textSizeBody,
+                    color: SettingApp.settingApp.colorText,
+                  ),
+                ),
+              )
+            : Text(
+                "ค้นหาข่าว",
+                style: TextStyle(
+                  fontSize: SettingApp.settingApp.textSizeH2,
+                  color: SettingApp.settingApp.colorText,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
         actions: [
+          if (!_isSearchCheck)
+            IconButton(
+              onPressed: () {
+                setState(() {
+                  _openHistory = !_openHistory;
+                  if (historySearch == null) {
+                    getHistorySearch();
+                  }
+                });
+              },
+              icon: Icon(
+                Icons.history,
+                color: (_openHistory) ? SettingApp.settingApp.colorIconHighlight : SettingApp.settingApp.colorIcon,
+              ),
+              iconSize: SettingApp.settingApp.iconSize,
+            ),
           IconButton(
             onPressed: () {
-              saveNews();
-              Navigator.pushNamed(context, SearchNewsPage.routeName);
+              setState(() {
+                setState(() {
+                  _isSearchCheck = !_isSearchCheck;
+                  _openHistory = false;
+
+                  if (!_isSearchCheck) {
+                    _textEditingController.clear();
+                    searchText = null;
+                  }
+                });
+              });
             },
-            icon: Icon(
-              Icons.search,
-              size: SettingApp.settingApp.iconSize,
-            ),
+            iconSize: SettingApp.settingApp.iconSize,
+            icon: _isSearchCheck ? const Icon(Icons.close) : const Icon(Icons.search),
             color: SettingApp.settingApp.colorIcon,
           ),
         ],
+        backgroundColor: Colors.black12,
       ),
       body: Column(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              color: SettingApp.settingApp.colorButton,
-              boxShadow: [
-                BoxShadow(
-                  color: SettingApp.settingApp.colorShadow,
-                  spreadRadius: 1,
-                  blurRadius: 6,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Row(
-                      children: [
-                        Transform.scale(
-                          scale: (SettingApp.settingApp.appSize.contains('big')) ? 1.2 : (SettingApp.settingApp.appSize.contains('small') ? 0.8 : 1),
-                          child: Checkbox(
-                            checkColor: SettingApp.settingApp.colorButton,
-                            focusColor: SettingApp.settingApp.colorIconHighlight,
-                            activeColor: SettingApp.settingApp.colorIconHighlight,
-                            value: _isTranslate,
-                            onChanged: (value) {
-                              setState(() {
-                                _isTranslate = value!;
-                              });
-                              //
-                            },
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: Text(
-                            "แปลภาษา",
-                            style: TextStyle(
-                              fontSize: SettingApp.settingApp.textSizeButton,
-                              color: SettingApp.settingApp.colorText,
-                            ),
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            Text(
-                              "หมวด",
-                              style: TextStyle(
-                                fontSize: SettingApp.settingApp.textSizeButton,
-                                color: SettingApp.settingApp.colorText,
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(left: 8, right: 8),
-                              child: DropdownButton<String>(
-                                isExpanded: false,
-                                onChanged: (String? newValue) async {
-                                  await saveNews();
-                                  setState(() {
-                                    _category = newValue!;
-                                  });
-                                  getNews();
-                                },
-                                items: category.keys.toList().map<DropdownMenuItem<String>>((String category) {
-                                  return DropdownMenuItem<String>(
-                                    value: category,
-                                    child: Text(
-                                      category,
-                                      style: TextStyle(
-                                        fontSize: SettingApp.settingApp.textSizeButton,
-                                        color: SettingApp.settingApp.colorText,
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                                value: _category,
-                                iconSize: SettingApp.settingApp.iconSize,
-                                dropdownColor: SettingApp.settingApp.colorButton,
-                                iconDisabledColor: SettingApp.settingApp.colorIcon,
-                                iconEnabledColor: SettingApp.settingApp.colorIcon,
-                              ),
-                            ),
-                          ],
-                        ),
-                        IconButton(
-                          onPressed: () async {
-                            await saveNews();
-                            setState(() {
-                              _isLast = !_isLast;
-                              _date = (_isLast) ? 'last' : 'old';
-                              getNews();
-                            });
-                          },
-                          icon: Icon(
-                            Icons.swap_vert,
-                            color: (!_isLast) ? SettingApp.settingApp.colorIconHighlight : SettingApp.settingApp.colorIcon,
-                            size: SettingApp.settingApp.iconSize,
-                          ),
-                        ),
-                      ],
+          if (!_isSearchCheck && !_openHistory)
+            Container(
+              decoration: BoxDecoration(
+                color: SettingApp.settingApp.colorButton,
+                boxShadow: [
+                  BoxShadow(
+                    color: SettingApp.settingApp.colorShadow,
+                    spreadRadius: 1,
+                    blurRadius: 1,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Transform.scale(
+                    scale: (SettingApp.settingApp.appSize.contains('big')) ? 1.2 : (SettingApp.settingApp.appSize.contains('small') ? 0.8 : 1),
+                    child: Checkbox(
+                      checkColor: SettingApp.settingApp.colorButton,
+                      focusColor: SettingApp.settingApp.colorIconHighlight,
+                      activeColor: SettingApp.settingApp.colorIconHighlight,
+                      value: _isTranslate,
+                      onChanged: (value) {
+                        setState(() {
+                          _isTranslate = value!;
+                        });
+                        //
+                      },
                     ),
-                    Row(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8, right: 8),
-                          child: Text(
-                            "ประเทศ",
-                            style: TextStyle(
-                              fontSize: SettingApp.settingApp.textSizeButton,
-                              color: SettingApp.settingApp.colorText,
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8, right: 8),
-                          child: DropdownButton<String>(
-                            isExpanded: false,
-                            onChanged: (String? newValue) async {
-                              await saveNews();
-                              setState(() {
-                                _country = newValue!;
-                              });
-                              getNews();
-                            },
-                            items: country.keys.toList().map<DropdownMenuItem<String>>((String country) {
-                              return DropdownMenuItem<String>(
-                                value: country,
-                                child: Text(
-                                  country,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: SettingApp.settingApp.textSizeButton,
-                                    color: SettingApp.settingApp.colorText,
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                            value: _country,
-                            iconSize: SettingApp.settingApp.iconSize,
-                            dropdownColor: SettingApp.settingApp.colorButton,
-                            iconDisabledColor: SettingApp.settingApp.colorIcon,
-                            iconEnabledColor: SettingApp.settingApp.colorIcon,
-                          ),
-                        ),
-                      ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Text(
+                      "แปลภาษา",
+                      style: TextStyle(
+                        fontSize: SettingApp.settingApp.textSizeButton,
+                        color: SettingApp.settingApp.colorText,
+                      ),
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
-          ),
           Expanded(
             child: Stack(
               children: [
-                if (_errorMessage != null) buildErrorPage(),
-                if (!_isLoading && _newsResponse != null) buildPage(),
-                if (!_isLoading && _newsResponse != null && _newsResponse!.news!.isEmpty)
+                if (_openHistory) buildHistoryPage(),
+                if (_errorMessage != null && !_isSearchCheck && !_openHistory) buildErrorPage(),
+                if (_isSearchCheck && popularWords != null && !_openHistory) buildListPopularSearch(),
+                if (!_isLoading && _newsResponse != null && !_isSearchCheck && !_openHistory) buildPage(),
+                if (_isLoading) buildLoadingOverlay(),
+                if (_newsResponse == null && !_isSearchCheck && !_isLoading && _errorMessage == null && !_openHistory)
                   Center(
                     child: Text(
-                      "ไม่มีข่าว",
+                      "ยังไม่ได้กรอกคำค้นหา",
                       style: TextStyle(
                         fontSize: SettingApp.settingApp.textSizeBody,
                         color: SettingApp.settingApp.colorText,
                       ),
                     ),
                   ),
-                if (_isLoading) buildLoadingOverlay(),
               ],
             ),
           ),

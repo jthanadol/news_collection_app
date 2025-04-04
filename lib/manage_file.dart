@@ -14,6 +14,7 @@ class ManageFile {
   Future<void> writeFileJson({required String fileName, required var data}) async {
     var file = File(fileName);
     String jsonString = jsonEncode(data);
+    // print(jsonString);
     await file.writeAsString(jsonString);
     print('writeFileJson สำเร็จ : $fileName');
   }
@@ -27,6 +28,7 @@ class ManageFile {
   dynamic readFileJson({required String fileName}) async {
     var file = File(fileName);
     String jsonString = await file.readAsString();
+    // print(jsonString);
     var data = jsonDecode(jsonString);
     print('readFileJson สำเร็จ : $fileName');
     return data;
@@ -66,6 +68,15 @@ class ManageFile {
       print('สร้าง dir : $dirPath เรียบร้อย');
     } else {
       print('มี dir : $dirPath อยู่แล้ว');
+    }
+  }
+
+  Future<bool> copyFile({required String sourcePath, required String copyPath}) async {
+    if (await checkFileExists(fileName: sourcePath)) {
+      await File(sourcePath).copy(copyPath);
+      return true;
+    } else {
+      return false;
     }
   }
 }

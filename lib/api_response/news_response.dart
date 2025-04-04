@@ -9,9 +9,12 @@ class NewsResponse {
 
   factory NewsResponse.fromJson(Map<String, dynamic> json) {
     List<News> n = [];
-    for (var item in json['results']) {
-      n.add(News.fromJson(item));
+    if (json['results'] != null) {
+      for (var item in json['results']) {
+        n.add(News.fromJson(item));
+      }
     }
+
     return NewsResponse(news: n);
   }
 
@@ -21,11 +24,11 @@ class NewsResponse {
 }
 
 class News {
-  int? newId;
+  int? newsId;
   String? title;
   String? description;
   String? imgUrl;
-  String? newUrl;
+  String? newsUrl;
   String? pubDate;
   String? sourceName;
   String? sourceIcon;
@@ -35,15 +38,15 @@ class News {
   FactCheckResponse? factCheckTh;
   String? content;
   String? contentTh;
-  List<String>? audioTh = [];
-  List<String>? audioEn = [];
+  String? audioTH;
+  String? audioEN;
 
   News({
-    this.newId,
+    this.newsId,
     this.title,
     this.description,
     this.imgUrl,
-    this.newUrl,
+    this.newsUrl,
     this.pubDate,
     this.sourceName,
     this.sourceIcon,
@@ -53,17 +56,17 @@ class News {
     this.factCheckTh,
     this.content,
     this.contentTh,
-    this.audioTh,
-    this.audioEn,
+    this.audioTH,
+    this.audioEN,
   });
 
   factory News.fromJson(Map<String, dynamic> json) {
     return News(
-      newId: json['new_id'],
+      newsId: json['news_id'],
       title: json['title'],
       description: json['description'],
       imgUrl: json['img_url'],
-      newUrl: json['new_url'],
+      newsUrl: json['news_url'],
       pubDate: json['pub_date'],
       sourceName: json['source_name'],
       sourceIcon: json['source_icon'],
@@ -73,18 +76,18 @@ class News {
       factCheckTh: FactCheckResponse.fromJson(json['fact_check_th']),
       content: json['content'],
       contentTh: json['content_th'],
-      audioEn: (json['audioEn'] == null) ? [] : json['audioEn'],
-      audioTh: (json['audioTh'] == null) ? [] : json['audioTh'],
+      audioEN: json['audio_en'],
+      audioTH: json['audio_th'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'new_id': newId,
+      'news_id': newsId,
       'title': title,
       'description': description,
       'img_url': imgUrl,
-      'new_url': newUrl,
+      'news_url': newsUrl,
       'pub_date': pubDate,
       'source_name': sourceName,
       'source_icon': sourceIcon,
@@ -94,8 +97,8 @@ class News {
       'fact_check_th': factCheckTh?.toJson(),
       'content': content,
       'content_th': contentTh,
-      'audio_th': audioTh,
-      'audio_en': audioEn,
+      'audio_th': audioTH,
+      'audio_en': audioEN,
     };
   }
 }
