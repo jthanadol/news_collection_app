@@ -36,6 +36,7 @@ class _SearchNewsPageState extends State<SearchNewsPage> {
   List<String>? historyDate;
   bool _openHistory = false;
   bool _isNewsFromWaitBingSearch = false;
+  Timer? _timer;
 
   @override
   void initState() {
@@ -47,6 +48,11 @@ class _SearchNewsPageState extends State<SearchNewsPage> {
 
   @override
   void dispose() {
+    if (_timer != null) {
+      if (_timer!.isActive) {
+        _timer!.cancel();
+      }
+    }
     _textEditingController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -66,10 +72,20 @@ class _SearchNewsPageState extends State<SearchNewsPage> {
             _isLoading = true;
             _errorMessage = null;
           });
+          if (historySearch != null && historyDate != null) {
+            historySearch!.insert(0, searchText!);
+            historyDate!.insert(0, DateTime.now().toString());
+          }
           getNewsButWaitBingSearch(searchText!);
-          NewsResponse newsResponse = await ApiAction.apiAction.searchNews(text: searchText!, accountId: Auth.auth.accountId, waitBingSearch: false);
-          if (!_isNewsFromWaitBingSearch) {
-            _newsResponse = newsResponse;
+          List newsResponse = await ApiAction.apiAction.searchNews(text: searchText!, accountId: Auth.auth.accountId, waitBingSearch: false, keepHistory: false);
+          // ช่อง 1 เป็น true แปลว่าไม่มี error
+          if (newsResponse[1]) {
+            if (!_isNewsFromWaitBingSearch) {
+              //ช่อง 0 คือผลลัพธ์การค้นหา
+              _newsResponse = newsResponse[0];
+            }
+          } else {
+            _errorMessage = "เกิดข้อผิดพลาดในการค้นหา";
           }
 
           setState(() {
@@ -81,7 +97,7 @@ class _SearchNewsPageState extends State<SearchNewsPage> {
       } else {
         setState(() {
           _newsResponse = null;
-          _errorMessage = 'ยังไม่ได้ทำการเชื่อมต่ออินเตอร์เน็ต';
+          _errorMessage = 'โปรดเชื่อมต่ออินเตอร์เน็ต';
         });
       }
     }
@@ -96,11 +112,13 @@ class _SearchNewsPageState extends State<SearchNewsPage> {
               _errorMessage = null;
               _fillData = true;
             });
-            var newsNext = await ApiAction.apiAction.searchNews(text: searchText!, offset: _newsResponse!.news!.length, accountId: Auth.auth.accountId, waitBingSearch: false);
-            if (newsNext.news!.isEmpty) {
-              _isNewsEnd = true;
-            } else {
-              _newsResponse!.news!.addAll(newsNext.news!);
+            List newsNext = await ApiAction.apiAction.searchNews(text: searchText!, offset: _newsResponse!.news!.length, accountId: Auth.auth.accountId, waitBingSearch: false, keepHistory: false);
+            if (newsNext[1]) {
+              if (newsNext[0].news!.isEmpty) {
+                _isNewsEnd = true;
+              } else {
+                _newsResponse!.news!.addAll(newsNext[0].news!);
+              }
             }
 
             setState(() {
@@ -115,32 +133,39 @@ class _SearchNewsPageState extends State<SearchNewsPage> {
   }
 
   Future<void> getNewsButWaitBingSearch(String text) async {
-    NewsResponse newsResponse = await ApiAction.apiAction.searchNews(text: text, accountId: Auth.auth.accountId, waitBingSearch: true);
-    bool repeatedNews = true;
-    if (_newsResponse != null) {
-      for (var i = 0; i < newsResponse.news!.length; i++) {
-        if (jsonEncode(_newsResponse!.news![i].toJson()) != jsonEncode(newsResponse.news![i].toJson())) {
-          print("ช่องที่ $i ไม่เท่ากัน");
-          repeatedNews = false;
-          break;
+    List newsResponse = await ApiAction.apiAction.searchNews(text: text, accountId: Auth.auth.accountId, waitBingSearch: true, keepHistory: true);
+    if (newsResponse[1]) {
+      bool repeatedNews = true; //เช็คว่าข้อมูลแบบรอ BingSearch ซ้ำกับแบบไม่รอไม
+      if (_newsResponse != null) {
+        for (var i = 0; i < newsResponse[0].news!.length; i++) {
+          if (jsonEncode(_newsResponse!.news![i].toJson()) != jsonEncode(newsResponse[0].news![i].toJson())) {
+            print("ช่องที่ $i ไม่เท่ากัน");
+            repeatedNews = false;
+            break;
+          }
         }
       }
-    }
-    if (!repeatedNews) {
-      if (text == searchText) {
-        setState(() {
-          _newsResponse = newsResponse;
-          _isNewsFromWaitBingSearch = true;
-          _isLoading = true;
-        });
-        Timer.periodic(
-          const Duration(milliseconds: 800),
-          (timer) {
-            setState(() {
-              _isLoading = false;
-            });
-          },
-        );
+      if (!repeatedNews) {
+        if (text == searchText) {
+          setState(() {
+            _newsResponse = newsResponse[0];
+            _isNewsFromWaitBingSearch = true;
+            _isLoading = true;
+          });
+          if (_timer != null) {
+            if (_timer!.isActive) {
+              _timer!.cancel();
+            }
+          }
+          _timer = Timer.periodic(
+            const Duration(seconds: 1),
+            (timer) {
+              setState(() {
+                _isLoading = false;
+              });
+            },
+          );
+        }
       }
     }
   }
@@ -240,6 +265,37 @@ class _SearchNewsPageState extends State<SearchNewsPage> {
                       );
                     },
                     itemCount: historySearch!.length),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  fixedSize: Size.fromHeight(SettingApp.settingApp.buttonSize),
+                  backgroundColor: SettingApp.settingApp.colorButton,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  side: BorderSide(color: Colors.red.withOpacity(0.5), width: 2),
+                ),
+                onPressed: () {
+                  ApiAction.apiAction.deleteSearchHistory(accountId: Auth.auth.accountId);
+                  setState(() {
+                    historySearch = [];
+                    historyDate = [];
+                  });
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.delete, color: Colors.red),
+                    const SizedBox(width: 8),
+                    Text(
+                      'ลบประวัติการค้นหา',
+                      style: TextStyle(
+                        fontSize: SettingApp.settingApp.textSizeButton,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           )

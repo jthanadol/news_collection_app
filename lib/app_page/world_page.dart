@@ -29,7 +29,7 @@ class _WorldPageState extends State<WorldPage> {
   bool _isTranslate = true; //สถานะว่าจะแสดงแบบแปลภาษาหรือไม่
   bool _isNewsEnd = false; //ข้อมูลที่ขอกับ server หมดหรือยังถ้ายังเป็น false
   bool _isLast = true; //true เรียงข่าวจากล่าสุด
-  late Timer _timer;
+  Timer? _timer;
 
   String fileName = ''; //ไฟล์ cache ที่อ่านล่าสุด
 
@@ -49,6 +49,11 @@ class _WorldPageState extends State<WorldPage> {
   @override
   void dispose() {
     saveNews();
+    if (_timer != null) {
+      if (_timer!.isActive) {
+        _timer!.cancel();
+      }
+    }
     _scrollController.dispose();
     super.dispose();
   }
@@ -96,7 +101,7 @@ class _WorldPageState extends State<WorldPage> {
           print('เขียนไฟล์สำเร็จ');
         } else {
           setState(() {
-            _errorMessage = 'ยังไม่ได้ทำการเชื่อมต่ออินเตอร์เน็ต';
+            _errorMessage = 'โปรดเชื่อมต่ออินเตอร์เน็ต';
             _newsResponse = null;
           });
         }
@@ -147,8 +152,13 @@ class _WorldPageState extends State<WorldPage> {
           _newsResponse = newsResponse;
           _isLoading = true;
         });
+        if (_timer != null) {
+          if (_timer!.isActive) {
+            _timer!.cancel();
+          }
+        }
         _timer = Timer.periodic(
-          const Duration(milliseconds: 800),
+          const Duration(seconds: 1),
           (timer) {
             setState(() {
               _isLoading = false;

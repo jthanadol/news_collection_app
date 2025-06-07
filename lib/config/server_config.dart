@@ -1,6 +1,6 @@
 class ServerConfig {
   static final serverConfig = ServerConfig();
-  final urlServer = "http://192.168.0.249:3000"; //domainname server
+  final urlServer = "https://web-api-news-hqdndegnhkdfeafm.malaysiawest-01.azurewebsites.net"; //domainname server
   final endPointNews = "/news?"; //endpoint ของการขอข้อมูลข่าว
   final endPointSearch = "/search?"; //endpoint ของการค้นหาข่าว
   final endPointFactCheck = "/factcheck?"; //endpoint ของการค้นการตัวสอบข้อเท็จจริง
@@ -8,11 +8,12 @@ class ServerConfig {
   final endPointAudio = '/audio?'; //endpoint ขอรายการไฟล์เสียง
   final endPointLogin = '/login'; //endpoint เข้าสู่ระบบ
   final endPointRegister = '/register'; //endpoint สมัครสมาชิก
-  final endPointOTP = '/otp'; //endpoint ขอ OTP
+  final endPointOTP = '/OTP'; //endpoint ขอ OTP
   final endPointForgot = '/forgot'; // endpoint เปลี่ยนรหัสผ่าน
   final endPointGoogleLogin = '/googleLogin'; //endpoint เข้าสู่ระบบด้วย google
   final endPointPopularSearch = '/popularSearch'; //คำยอดนิยมในการค้นหา
   final endPointSearchHistory = '/searchHistory'; //ประวัติการค้นหา
+  final endPointDeleteSearchHistory = '/deleteSearchHistory?'; //ลบประวัติการค้นหา
 
   final category = {
     'ธุรกิจ': 'business',

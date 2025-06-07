@@ -345,7 +345,7 @@ class _OfflineNewsState extends State<OfflineNews> {
                     ),
                   ],
                 ),
-              )
+              ),
           ],
         );
 

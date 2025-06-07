@@ -31,28 +31,28 @@ class ApiAction {
   }
 
   //parameter text ใน body คือ คำค้น || since เวลาของข่าวเช่น ตั้งแต่ 2024-1-1 จน ปัจจุบัน, offset ข้ามข่าว เช่น 10 คือ ข้ามไปทำเอาอันที่ 11 เป็นต้นไป
-  Future<NewsResponse> searchNews({required String text, String? since, int offset = 0, required int accountId, bool waitBingSearch = true}) async {
+  Future<List<Object>> searchNews({required String text, String? since, int offset = 0, required int accountId, bool waitBingSearch = true, bool keepHistory = true}) async {
     String url = "${ServerConfig.serverConfig.urlServer + ServerConfig.serverConfig.endPointSearch}offset=$offset&accountId=$accountId";
     if (since != null) {
       url += "&since=$since";
     }
     var response = await http.post(
       Uri.parse(url),
-      body: jsonEncode({"text": text, "waitBingSearch": waitBingSearch}),
+      body: jsonEncode({"text": text, "waitBingSearch": waitBingSearch, "keepHistory": keepHistory}),
       headers: {"Content-type": "application/json"},
     );
     print("Method getNews : $url");
     try {
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
-        return NewsResponse.fromJson(data);
+        return [NewsResponse.fromJson(data), true];
       } else {
         print("method getNews ERROR STATUS : ${response.statusCode}");
-        return NewsResponse.fromJson({});
+        return [NewsResponse.fromJson({}), false];
       }
     } catch (e) {
       print(e);
-      return NewsResponse.fromJson({});
+      return [NewsResponse.fromJson({}), false];
     }
   }
 
@@ -310,6 +310,20 @@ class ApiAction {
       return true;
     } else {
       return false;
+    }
+  }
+
+  void deleteSearchHistory({required int accountId}) async {
+    String url = '${ServerConfig.serverConfig.urlServer}${ServerConfig.serverConfig.endPointDeleteSearchHistory}accountId=$accountId';
+    try {
+      var response = await http.delete(Uri.parse(url));
+      if (response.statusCode == 200) {
+        print('ลบประวัติการค้นหาเรียบร้อยแล้ว');
+      } else {
+        print('ลบประวัติการค้นหาไม่สำเร็จ');
+      }
+    } catch (e) {
+      print('deleteSearchHistory Error : ' + e.toString());
     }
   }
 }

@@ -36,7 +36,7 @@ class _HomePageState extends State<HomePage> {
   String _category = 'ธุรกิจ';
   String _date = 'last';
   final category = ServerConfig.serverConfig.category;
-  late Timer _timer;
+  Timer? _timer;
 
   @override
   void initState() {
@@ -48,7 +48,11 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     saveNews();
-
+    if (_timer != null) {
+      if (_timer!.isActive) {
+        _timer!.cancel();
+      }
+    }
     _scrollController.dispose();
     super.dispose();
   }
@@ -95,7 +99,7 @@ class _HomePageState extends State<HomePage> {
           print('เขียนไฟล์สำเร็จ');
         } else {
           setState(() {
-            _errorMessage = 'ยังไม่ได้ทำการเชื่อมต่ออินเตอร์เน็ต';
+            _errorMessage = 'โปรดเชื่อมต่ออินเตอร์เน็ต';
             _newsResponse = null;
           });
         }
@@ -148,8 +152,13 @@ class _HomePageState extends State<HomePage> {
           _newsResponse = newsResponse;
           _isLoading = true;
         });
+        if (_timer != null) {
+          if (_timer!.isActive) {
+            _timer!.cancel();
+          }
+        }
         _timer = Timer.periodic(
-          const Duration(milliseconds: 800),
+          const Duration(seconds: 1),
           (timer) {
             setState(() {
               _isLoading = false;

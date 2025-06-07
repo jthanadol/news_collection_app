@@ -72,7 +72,7 @@ class _ReadNewsPageState extends State<ReadNewsPage> {
             }
           } else {
             setState(() {
-              _errorMessage = 'ยังไม่ได้ทำการเชื่อมต่ออินเตอร์เน็ต';
+              _errorMessage = 'โปรดเชื่อมต่ออินเตอร์เน็ต';
             });
           }
         } else {
@@ -93,7 +93,7 @@ class _ReadNewsPageState extends State<ReadNewsPage> {
             }
           } else {
             setState(() {
-              _errorMessage = 'ยังไม่ได้ทำการเชื่อมต่ออินเตอร์เน็ต';
+              _errorMessage = 'โปรดเชื่อมต่ออินเตอร์เน็ต';
             });
           }
         }
@@ -231,7 +231,7 @@ class _ReadNewsPageState extends State<ReadNewsPage> {
     setState(() {});
   }
 
-  Future<void> saveNewsToOffline() async {
+  Future<void> saveOfflineNews() async {
     String path = await PathFile.pathFile.getDocPath();
     News news = News.fromJson(_news!.toJson());
     path = '$path/offlinenews.json';
@@ -656,6 +656,9 @@ class _ReadNewsPageState extends State<ReadNewsPage> {
                       ),
                     ],
                   ),
+                ),
+                const SizedBox(
+                  height: 8,
                 ),
                 if (_news!.imgUrl != null)
                   Column(
@@ -1170,7 +1173,7 @@ class _ReadNewsPageState extends State<ReadNewsPage> {
                     },
                     child: Row(
                       children: [
-                        Icon(Icons.refresh),
+                        const Icon(Icons.refresh),
                         Text(
                           'รีเฟรช',
                           style: TextStyle(
@@ -1361,7 +1364,7 @@ class _ReadNewsPageState extends State<ReadNewsPage> {
                     ],
                   ),
                   onTap: () {
-                    saveNewsToOffline();
+                    saveOfflineNews();
                   },
                 ),
                 PopupMenuItem<String>(

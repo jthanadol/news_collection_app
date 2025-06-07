@@ -89,7 +89,7 @@ class _FactCheckPageState extends State<FactCheckPage> {
               // print('อัพเดทข้อมูลข่าวใหม่สำเร็จ');
             } else {
               setState(() {
-                _errorMessage = 'ยังไม่ได้ทำการเชื่อมต่ออินเตอร์เน็ต';
+                _errorMessage = 'โปรดเชื่อมต่ออินเตอร์เน็ต';
                 _factCheckResponse = null;
               });
             }
@@ -106,7 +106,7 @@ class _FactCheckPageState extends State<FactCheckPage> {
             // print('เขียนไฟล์สำเร็จ');
           } else {
             setState(() {
-              _errorMessage = 'ยังไม่ได้ทำการเชื่อมต่ออินเตอร์เน็ต';
+              _errorMessage = 'โปรดเชื่อมต่ออินเตอร์เน็ต';
               _factCheckResponse = null;
             });
           }
